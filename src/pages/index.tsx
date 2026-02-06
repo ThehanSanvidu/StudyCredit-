@@ -6,279 +6,230 @@ import {
   Plus, Minus, Brain, BookOpen, Calculator, RotateCcw, Layout, Edit3, FlaskConical, Beaker, 
   Sunrise, Dumbbell, Smartphone, Ghost, GraduationCap, Microscope, Palette, Binary, 
   AlertTriangle, Calendar, ShoppingCart, Coffee, FastForward, Gift, Moon, Star, Volume2, Lock,
-  SkipForward, SkipBack, Apple
+  SkipForward, SkipBack, Apple, BarChart3, ClipboardList, Home, ChevronRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// 🎵 10 TRACK LOFI LIBRARY
+// --- LOFI DATA ---
 const LOFI_LIBRARY = [
   { id: 't1', name: 'Deep Space Focus', url: 'https://stream.zeno.fm/0r0xa792kwzuv', cost: 0, unlocked: true },
   { id: 't2', name: 'Rainy Night Desk', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', cost: 100, unlocked: false },
   { id: 't3', name: 'Cyberpunk Chill', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', cost: 150, unlocked: false },
-  { id: 't4', name: 'Zen Garden', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', cost: 200, unlocked: false },
-  { id: 't5', name: 'Midnight Library', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', cost: 250, unlocked: false },
-  { id: 't6', name: 'Autumn Leaves', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', cost: 300, unlocked: false },
-  { id: 't7', name: 'Neon Rain', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', cost: 350, unlocked: false },
-  { id: 't8', name: 'Coffee Shop Vibes', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', cost: 400, unlocked: false },
-  { id: 't9', name: 'Vintage Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', cost: 450, unlocked: false },
-  { id: 't10', name: 'Nebula Drift', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', cost: 500, unlocked: false },
 ];
 
 export default function StudyCreditsUltimateOS() {
+  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'exams'>('home');
   const [sc, setSc] = useState(0);
   const [totalHours, setTotalHours] = useState(0);
   const [name, setName] = useState("");
   const [isGhostMode, setIsGhostMode] = useState(false);
-  const [timerMode, setTimerMode] = useState<'pomodoro' | 'stopwatch'>('pomodoro');
-  const [timeLeft, setTimeLeft] = useState(1500); 
-  const [isActive, setIsActive] = useState(false);
-  const [stopwatchTime, setStopwatchTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [unlockedTracks, setUnlockedTracks] = useState(['t1']);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [examResults, setExamResults] = useState<{subject: string, mark: number, date: string}[]>([]);
+  const [dailyHistory, setDailyHistory] = useState<{date: string, sc: number}[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // --- FREE SAVING LOGIC ---
   useEffect(() => {
     const savedName = localStorage.getItem('study_sync_name') || "Scholar";
     setName(savedName);
     setSc(Number(localStorage.getItem(`sc_${savedName}`)) || 0);
     setTotalHours(Number(localStorage.getItem(`hours_${savedName}`)) || 0);
-    const savedTracks = JSON.parse(localStorage.getItem(`tracks_${savedName}`) || '["t1"]');
-    setUnlockedTracks(savedTracks);
+    setExamResults(JSON.parse(localStorage.getItem(`exams_${savedName}`) || '[]'));
+    setDailyHistory(JSON.parse(localStorage.getItem(`history_${savedName}`) || '[]'));
+    
     audioRef.current = new Audio(LOFI_LIBRARY[0].url);
     audioRef.current.loop = true;
   }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      const wasPlaying = isPlaying;
-      audioRef.current.pause();
-      audioRef.current = new Audio(LOFI_LIBRARY[currentTrackIndex].url);
-      audioRef.current.loop = true;
-      if (wasPlaying) audioRef.current.play();
-    }
-  }, [currentTrackIndex]);
-
-  useEffect(() => {
-    let interval: any;
-    if (isActive) {
-      interval = setInterval(() => {
-        if (timerMode === 'pomodoro') {
-          if (timeLeft > 0) setTimeLeft(prev => prev - 1);
-          else { setIsActive(false); addSC(50); confetti(); }
-        } else {
-          setStopwatchTime(prev => prev + 1);
-          if (stopwatchTime > 0 && stopwatchTime % 3600 === 0) {
-            setTotalHours(h => h + 1);
-            localStorage.setItem(`hours_${name}`, (totalHours + 1).toString());
-          }
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft, timerMode, stopwatchTime, name, totalHours]);
 
   const addSC = (amount: number) => {
     const total = sc + amount;
     setSc(total);
     localStorage.setItem(`sc_${name}`, total.toString());
+    
+    // Save to daily history for charts
+    const today = new Date().toLocaleDateString();
+    const newHistory = [...dailyHistory];
+    const existingIndex = newHistory.findIndex(h => h.date === today);
+    if (existingIndex > -1) newHistory[existingIndex].sc += amount;
+    else newHistory.push({ date: today, sc: amount });
+    
+    setDailyHistory(newHistory);
+    localStorage.setItem(`history_${name}`, JSON.stringify(newHistory));
     confetti({ particleCount: 150, spread: 60 });
   };
 
-  const buyItem = (cost: number, itemName: string, isTrack = false, trackId = "") => {
-    if (sc >= cost) {
-      const total = sc - cost;
-      setSc(total);
-      localStorage.setItem(`sc_${name}`, total.toString());
-      if (isTrack) {
-        const newTracks = [...unlockedTracks, trackId];
-        setUnlockedTracks(newTracks);
-        localStorage.setItem(`tracks_${name}`, JSON.stringify(newTracks));
-      }
-      alert(`PURCHASED: ${itemName} ✅`);
-    } else {
-      alert("INSUFFICIENT SC ❌");
-    }
-  };
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, '0')}`;
+  const addExamMark = (subject: string, mark: number) => {
+    const newResult = { subject, mark, date: new Date().toLocaleDateString() };
+    const updated = [...examResults, newResult];
+    setExamResults(updated);
+    localStorage.setItem(`exams_${name}`, JSON.stringify(updated));
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-700 ${isGhostMode ? 'bg-black' : 'bg-[#02040a]'} text-white p-6 font-sans relative overflow-hidden`}>
+    <div className={`min-h-screen ${isGhostMode ? 'bg-black' : 'bg-[#02040a]'} text-white font-sans flex overflow-hidden`}>
       
-      {/* 🧊 LIQUID GLASS BACKGROUND */}
-      <div className={`absolute inset-0 z-0 overflow-hidden transition-opacity duration-1000 ${isGhostMode ? 'opacity-5' : 'opacity-100'}`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1128] via-[#02040a] to-[#1a0b2e]" />
-        {[...Array(6)].map((_, i) => (
-          <motion.div key={i} animate={{ x: [0, 600, 0], y: [0, 400, 0] }} transition={{ duration: 25 + i * 5, repeat: Infinity }}
-            className="absolute w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-[100px]" />
-        ))}
-      </div>
-
-      {/* 👻 STEALTH GHOST MODE */}
+      {/* 👻 GHOST OVERLAY */}
       <AnimatePresence>
         {isGhostMode && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center pointer-events-none"
-          >
-            <p className="text-[15rem] font-mono font-black text-white/90 drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] leading-none">
-              {formatTime(timerMode === 'pomodoro' ? timeLeft : stopwatchTime)}
-            </p>
-            <button onClick={() => setIsGhostMode(false)} className="mt-20 pointer-events-auto text-[10px] font-black tracking-[1.5em] text-white/20 hover:text-white uppercase transition-all">
-              [ TERMINATE_GHOST_PROTOCOL ]
-            </button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center">
+            <h1 className="text-[12rem] font-black opacity-20 animate-pulse">FOCUSING</h1>
+            <button onClick={() => setIsGhostMode(false)} className="mt-10 text-white/20 hover:text-white uppercase tracking-widest text-xs">[ EXIT ]</button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-        
-        {/* LEFT: IDENTITY & LOFI CONTROL 👤🎵 */}
-        <aside className="lg:col-span-3 space-y-6">
-          <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2rem] border border-white/10 text-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 mx-auto"><User size={30} /></div>
-            <input value={name} onChange={(e) => {setName(e.target.value); localStorage.setItem('study_sync_name', e.target.value);}}
-              className="bg-transparent text-center text-lg font-black uppercase tracking-widest border-none focus:ring-0 w-full" placeholder="NAME_KEY" />
-            <div className="mt-4 bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between">
-              <span className="text-[10px] font-bold text-slate-500">SC BALANCE</span>
-              <span className="text-xl font-mono font-black text-emerald-400">{sc}</span>
-            </div>
-          </div>
+      {/* 🛰️ NAVIGATION SIDEBAR */}
+      <nav className="w-20 lg:w-64 bg-white/5 border-r border-white/10 p-6 flex flex-col gap-8 z-50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center"><Zap size={20}/></div>
+          <span className="hidden lg:block font-black tracking-tighter text-xl">SCHOLAR OS</span>
+        </div>
+        <div className="space-y-2">
+          <NavButton icon={<Home/>} label="Terminal" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+          <NavButton icon={<BarChart3/>} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+          <NavButton icon={<ClipboardList/>} label="Exams" active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} />
+        </div>
+        <div className="mt-auto">
+          <button onClick={() => setIsGhostMode(true)} className="w-full flex items-center gap-3 p-3 text-purple-400 hover:bg-purple-500/10 rounded-xl transition-all">
+            <Ghost size={20}/> <span className="hidden lg:block text-xs font-black uppercase">Stealth Mode</span>
+          </button>
+        </div>
+      </nav>
 
-          {/* 🎧 LOFI PLAYER CONTROLLER */}
-          <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2rem] border border-white/10">
-            <h3 className="text-[10px] font-black text-indigo-400 mb-4 flex items-center gap-2 uppercase tracking-[0.2em]"><Volume2 size={14}/> Lofi Deck</h3>
-            <div className="text-center mb-4">
-              <span className="text-[10px] font-black uppercase text-white/60 block mb-2">{LOFI_LIBRARY[currentTrackIndex].name}</span>
-              <div className="flex items-center justify-center gap-4">
-                <button onClick={() => setCurrentTrackIndex(prev => (prev === 0 ? LOFI_LIBRARY.length-1 : prev-1))} className="p-2 hover:text-indigo-400"><SkipBack size={20}/></button>
-                <button onClick={() => { if(audioRef.current) isPlaying ? audioRef.current.pause() : audioRef.current.play(); setIsPlaying(!isPlaying); }} className="p-3 bg-indigo-600 rounded-full shadow-lg shadow-indigo-500/20">
-                  {isPlaying ? <Pause size={24}/> : <Play size={24}/>}
-                </button>
-                <button onClick={() => setCurrentTrackIndex(prev => (prev === LOFI_LIBRARY.length-1 ? 0 : prev+1))} className="p-2 hover:text-indigo-400"><SkipForward size={20}/></button>
-              </div>
-            </div>
-            
-            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar border-t border-white/5 pt-4">
-              {LOFI_LIBRARY.map((track, idx) => {
-                const isUnlocked = unlockedTracks.includes(track.id);
-                return (
-                  <div key={track.id} className={`flex items-center justify-between p-2 rounded-lg text-[10px] transition-all ${currentTrackIndex === idx ? 'bg-indigo-600/20 border border-indigo-500/30' : 'bg-black/20 border border-transparent'}`}>
-                    <span className="font-bold uppercase truncate w-24">{track.name}</span>
-                    {isUnlocked ? (
-                      <button onClick={() => setCurrentTrackIndex(idx)} className="text-indigo-400 font-black uppercase">SELECT</button>
-                    ) : (
-                      <button onClick={() => buyItem(track.cost, track.name, true, track.id)} className="flex items-center gap-1 text-yellow-500 font-black">
-                        <Lock size={10}/> {track.cost}
-                      </button>
-                    )}
+      {/* 📺 MAIN CONTENT AREA */}
+      <main className="flex-1 p-8 overflow-y-auto relative">
+        <div className="absolute inset-0 bg-blue-500/5 blur-[120px] rounded-full -z-10" />
+
+        <AnimatePresence mode="wait">
+          {/* PAGE 1: TERMINAL (The Main Hub) */}
+          {activeTab === 'home' && (
+            <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-6">
+                  <header className="flex justify-between items-end">
+                    <div>
+                      <h2 className="text-4xl font-black tracking-tighter">DAILY MISSIONS</h2>
+                      <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">A/L Mastery Protocol </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-emerald-400 uppercase">Credits</p>
+                      <p className="text-4xl font-mono font-black">{sc}</p>
+                    </div>
+                  </header>
+                  
+                  <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/10 space-y-6">
+                    <TaskSection title="CORE GRIND [cite: 2]">
+                       <TaskRow icon={<Clock/>} name="Deep Work Hour" sc={30} onClick={() => addSC(30)} />
+                       <TaskRow icon={<Edit3/>} name="Ultra-Summary Note" sc={35} onClick={() => addSC(35)} />
+                    </TaskSection>
+                    <TaskSection title="SUBJECT POWER PLAYS [cite: 2]">
+                       <TaskRow icon={<Binary/>} name="Maths: Proof Mastery" sc={30} onClick={() => addSC(30)} />
+                       <TaskRow icon={<Beaker/>} name="Chemistry: The Alchemist" sc={30} onClick={() => addSC(30)} />
+                    </TaskSection>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
+                </div>
+                
+                <aside className="lg:col-span-4 space-y-6">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10">
+                     <h3 className="text-[10px] font-black text-indigo-400 mb-4 flex items-center gap-2 uppercase tracking-[0.2em]"><Volume2 size={14}/> Sound Deck</h3>
+                     <button onClick={() => { if(audioRef.current) isPlaying ? audioRef.current.pause() : audioRef.current.play(); setIsPlaying(!isPlaying); }} 
+                        className="w-full py-4 bg-indigo-600 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-3">
+                        {isPlaying ? <Pause/> : <Play/>} {isPlaying ? "Vibing..." : "Start Lofi"}
+                     </button>
+                  </div>
+                </aside>
+              </div>
+            </motion.div>
+          )}
 
-        {/* MAIN: FULL PDF TASK TERMINAL 📋 */}
-        <main className="lg:col-span-6 bg-white/5 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/10 shadow-2xl">
-          <h1 className="text-xl font-black mb-6 flex items-center gap-3 uppercase tracking-tighter border-b border-white/10 pb-4">
-            <Zap className="text-yellow-400 animate-pulse" /> Mission Control (Full Menu)
-          </h1>
-          
-          <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
-            {/* 1. CORE GRIND [cite: 2] */}
-            <TaskSection title="1. Core Grind">
-              <TaskRow icon={<Clock className="animate-spin-slow"/>} name="Deep Work Hour (60 min)" sc={30} onClick={() => addSC(30)} />
-              <TaskRow icon={<RotateCcw className="animate-reverse-spin"/>} name="Pomodoro Streak (4 sessions)" sc={50} onClick={() => addSC(50)} />
-              <TaskRow icon={<GraduationCap/>} name="Syllabus Progress (1 sub-topic)" sc={40} onClick={() => addSC(40)} />
-              <TaskRow icon={<Edit3/>} name="Ultra-Summary (1-page recall)" sc={35} onClick={() => addSC(35)} />
-              <TaskRow icon={<Layout/>} name="The Clean Slate (Tidy space)" sc={15} onClick={() => addSC(15)} />
-              <TaskRow icon={<Calendar/>} name="End-of-Day Review & Goal Setting" sc={20} onClick={() => addSC(20)} />
-            </TaskSection>
+          {/* PAGE 2: ANALYTICS (Progress Visualization) */}
+          {activeTab === 'analytics' && (
+            <motion.div key="analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
+              <h2 className="text-4xl font-black tracking-tighter uppercase">Visual Progress</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10">
+                  <h3 className="text-xs font-black text-slate-500 uppercase mb-6">SC Earning History</h3>
+                  <div className="flex items-end gap-2 h-48">
+                    {dailyHistory.slice(-7).map((h, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                        <div className="w-full bg-blue-500 rounded-t-lg" style={{ height: `${(h.sc / 250) * 100}%` }} />
+                        <span className="text-[8px] font-bold text-slate-500">{h.date.split('/')[0]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10 flex flex-col justify-center items-center text-center">
+                   <Target size={48} className="text-emerald-400 mb-4" />
+                   <h3 className="text-2xl font-black">Total Mastery</h3>
+                   <p className="text-slate-500 text-sm">You have earned {sc} SC across all sessions.</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-            {/* 2. SUBJECT SPECIFIC  */}
-            <TaskSection title="2. Subject Power Plays">
-              <TaskRow icon={<Binary/>} name="Maths: Proof Mastery" sc={30} onClick={() => addSC(30)} />
-              <TaskRow icon={<Calculator className="animate-bounce"/>} name="Maths: Part B Complex Q" sc={25} onClick={() => addSC(25)} />
-              <TaskRow icon={<Wand2/>} name="Physics: The Architect (Derivation)" sc={30} onClick={() => addSC(30)} />
-              <TaskRow icon={<Palette/>} name="Physics: The Visualizer (Diagram)" sc={15} onClick={() => addSC(15)} />
-              <TaskRow icon={<Beaker/>} name="Chemistry: The Alchemist (Synthesis)" sc={30} onClick={() => addSC(30)} />
-              <TaskRow icon={<Microscope/>} name="Chemistry: Color Guru (Tests)" sc={25} onClick={() => addSC(25)} />
-              <TaskRow icon={<FlaskConical/>} name="The Balancer (Redox)" sc={20} onClick={() => addSC(20)} />
-              <TaskRow icon={<Calculator/>} name="Stoichiometry Master" sc={20} onClick={() => addSC(20)} />
-            </TaskSection>
-
-            {/* 3. BONUS MULTIPLIERS [cite: 3] */}
-            <TaskSection title="3. Bonus Multipliers">
-              <TaskRow icon={<Sunrise/>} name="The Early Bird (Pre-7 AM)" sc={40} onClick={() => addSC(40)} />
-              <TaskRow icon={<User/>} name="The Teacher (Feynman Tech)" sc={50} onClick={() => addSC(50)} />
-              <TaskRow icon={<Dumbbell/>} name="Physical Buff (20m Exercise)" sc={30} onClick={() => addSC(30)} />
-              <TaskRow icon={<Smartphone/>} name="No-Phone Multiplier (4hr+)" sc={20} onClick={() => addSC(20)} />
-              <TaskRow icon={<Apple/>} name="Nutrition Boost" sc={10} onClick={() => addSC(10)} />
-            </TaskSection>
-
-            {/* 4. HEROIC FEATS [cite: 3] */}
-            <TaskSection title="4. Heroic Feats">
-              <TaskRow icon={<Sword className="animate-bounce"/>} name="The Full Mock (3hr)" sc={150} onClick={() => addSC(150)} gold />
-              <TaskRow icon={<Target/>} name="The Weakness Slayer (2hr)" sc={80} onClick={() => addSC(80)} />
-              <TaskRow icon={<AlertTriangle/>} name="The Error Log (10x entries)" sc={60} onClick={() => addSC(60)} />
-              <TaskRow icon={<Trophy/>} name="Perfect Week Bonus" sc={250} onClick={() => addSC(250)} gold />
-              <TaskRow icon={<FastForward/>} name="Inter-Subject Linkage" sc={70} onClick={() => addSC(70)} />
-            </TaskSection>
-          </div>
-        </main>
-
-        {/* RIGHT: REWARDS 🛍️ */}
-        <aside className="lg:col-span-3">
-          <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2rem] border border-white/10 shadow-2xl">
-            <h3 className="text-[10px] font-black text-yellow-500 mb-4 flex items-center gap-2 uppercase tracking-[0.2em]"><ShoppingCart size={14}/> Reward shop</h3>
-            <div className="space-y-2">
-              <RewardItem name="Coffee Break" cost={50} icon={<Coffee/>} onClick={() => buyItem(50, "Coffee Break")} />
-              <RewardItem name="Gaming (1hr)" cost={250} icon={<FastForward/>} onClick={() => buyItem(250, "Gaming Unlock")} />
-              <RewardItem name="Cheat Meal" cost={500} icon={<Gift/>} onClick={() => buyItem(500, "Cheat Meal")} />
-              <RewardItem name="Early Exit" cost={150} icon={<Moon/>} onClick={() => buyItem(150, "Early Exit")} />
-            </div>
-          </div>
-        </aside>
-      </div>
+          {/* PAGE 3: EXAM REGISTRY */}
+          {activeTab === 'exams' && (
+            <motion.div key="exams" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-3xl mx-auto space-y-8">
+              <h2 className="text-4xl font-black tracking-tighter uppercase">Exam Registry</h2>
+              <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10">
+                <form className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" onSubmit={(e:any) => {
+                  e.preventDefault();
+                  addExamMark(e.target.sub.value, Number(e.target.mrk.value));
+                  e.target.reset();
+                }}>
+                  <input name="sub" placeholder="Subject" className="bg-black/40 border border-white/10 rounded-xl p-3 text-xs" required />
+                  <input name="mrk" type="number" placeholder="Mark (%)" className="bg-black/40 border border-white/10 rounded-xl p-3 text-xs" required />
+                  <button type="submit" className="bg-blue-600 rounded-xl font-black text-[10px] uppercase">Record Mark</button>
+                </form>
+                
+                <div className="space-y-3">
+                  {examResults.map((ex, i) => (
+                    <div key={i} className="flex justify-between p-4 bg-black/20 rounded-xl border border-white/5">
+                      <span className="font-black text-xs uppercase text-slate-400">{ex.subject}</span>
+                      <span className="font-mono font-black text-emerald-400">{ex.mark}%</span>
+                      <span className="text-[10px] text-slate-600">{ex.date}</span>
+                    </div>
+                  )).reverse()}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 }
 
-// UI HELPER COMPONENTS
+// --- SUB-COMPONENTS ---
+function NavButton({ icon, label, active, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${active ? 'bg-blue-600 shadow-lg shadow-blue-500/20 text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+      {icon} <span className="hidden lg:block text-xs font-black uppercase tracking-widest">{label}</span>
+    </button>
+  );
+}
+
 function TaskSection({ title, children }: any) {
   return (
     <div>
-      <h3 className="text-[9px] font-black text-blue-500/60 uppercase tracking-[0.3em] mb-3 ml-2">{title}</h3>
-      <div className="space-y-2">{children}</div>
+      <h3 className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.3em] mb-4 ml-2">{title}</h3>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
 
-function RewardItem({ name, cost, icon, onClick }: any) {
+function TaskRow({ name, sc, onClick, icon }: any) {
   return (
-    <div onClick={onClick} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all">
-      <div className="flex items-center gap-3"> <div className="text-yellow-500">{icon}</div> <span className="text-[10px] font-bold text-slate-300 uppercase">{name}</span> </div>
-      <span className="text-[10px] font-black text-emerald-400">-{cost}</span>
-    </div>
-  );
-}
-
-function TaskRow({ name, sc, onClick, icon, gold = false }: any) {
-  return (
-    <motion.div whileHover={{ x: 5 }} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${gold ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
-      <div className="flex items-center gap-3 text-left">
-        <div className={gold ? 'text-yellow-500' : 'text-blue-400'}>{icon}</div>
+    <motion.div whileHover={{ x: 5 }} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+      <div className="flex items-center gap-4">
+        <div className="text-blue-400">{icon}</div>
         <div className="flex flex-col">
-          <span className={`text-[10px] font-black uppercase tracking-tight ${gold ? 'text-yellow-200' : 'text-white'}`}>{name}</span>
-          <span className="text-emerald-400 text-[9px] font-bold">+{sc} SC</span>
+          <span className="text-xs font-black uppercase tracking-tight text-white">{name}</span>
+          <span className="text-emerald-400 text-[10px] font-bold">+{sc} SC</span>
         </div>
       </div>
-      <button onClick={onClick} className="bg-blue-600/20 hover:bg-emerald-600 text-blue-400 hover:text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all">Claim</button>
+      <button onClick={onClick} className="bg-blue-600/20 hover:bg-blue-600 px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all">Claim</button>
     </motion.div>
   );
 }
