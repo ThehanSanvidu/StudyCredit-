@@ -20,11 +20,6 @@ const LOFI_LIBRARY = [
   { id: 't3', name: 'Cyberpunk Chill', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', cost: 150, unlocked: false },
   { id: 't4', name: 'Zen Garden', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', cost: 200, unlocked: false },
   { id: 't5', name: 'Midnight Library', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', cost: 250, unlocked: false },
-  { id: 't6', name: 'Autumn Leaves', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', cost: 300, unlocked: false },
-  { id: 't7', name: 'Neon Rain', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', cost: 350, unlocked: false },
-  { id: 't8', name: 'Coffee Shop Vibes', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', cost: 400, unlocked: false },
-  { id: 't9', name: 'Vintage Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', cost: 450, unlocked: false },
-  { id: 't10', name: 'Nebula Drift', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', cost: 500, unlocked: false },
 ];
 
 export default function ScholarOS() {
@@ -63,7 +58,6 @@ export default function ScholarOS() {
     setExamResults(JSON.parse(localStorage.getItem(`exams_${savedName}`) || '[]'));
 
     audioRef.current = new Audio(LOFI_LIBRARY[0].url);
-    // Auto-loop to next track
     audioRef.current.onended = () => setCurrentTrackIdx(p => (p + 1) % LOFI_LIBRARY.length);
   }, []);
 
@@ -95,11 +89,17 @@ export default function ScholarOS() {
     localStorage.setItem(`sc_${name}`, total.toString());
     
     // Update History for Analytics
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue"
     const newHist = [...dailyHistory];
     const idx = newHist.findIndex(h => h.date === today);
-    if (idx > -1) newHist[idx].sc += amount;
-    else newHist.push({ date: today, sc: amount });
+    
+    // Simple logic: if today exists, add to it. If not, add new entry. Keep max 7 days.
+    if (idx > -1) {
+        newHist[idx].sc += amount;
+    } else {
+        if(newHist.length >= 7) newHist.shift(); // Remove oldest
+        newHist.push({ date: today, sc: amount });
+    }
     
     setDailyHistory(newHist);
     localStorage.setItem(`history_${name}`, JSON.stringify(newHist));
@@ -137,7 +137,6 @@ export default function ScholarOS() {
     } else { alert("Insufficient Credits! 💎"); }
   };
 
-  // Badge Logic
   const getBadgeColor = () => {
     if (streak >= 30) return "bg-gradient-to-r from-fuchsia-600 to-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.5)]";
     if (streak >= 14) return "bg-gradient-to-r from-yellow-400 to-orange-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]";
@@ -191,7 +190,6 @@ export default function ScholarOS() {
 
       {/* 🛰️ SIDEBAR */}
       <nav className="w-24 lg:w-80 bg-white/5 border-r border-white/10 p-10 flex flex-col items-center gap-10 z-50 backdrop-blur-3xl">
-        {/* Animated Profile Section */}
         <div className="flex flex-col items-center gap-6 mb-10">
           <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
             className="w-24 h-24 lg:w-32 lg:h-32 bg-white/5 rounded-full border border-white/10 flex items-center justify-center text-6xl shadow-2xl relative">
@@ -219,7 +217,7 @@ export default function ScholarOS() {
       </nav>
 
       {/* 📺 MAIN TERMINAL */}
-      <main className="flex-1 p-14 overflow-y-auto z-10 custom-scrollbar">
+      <main className="flex-1 p-8 lg:p-14 overflow-y-auto z-10 custom-scrollbar">
         <AnimatePresence mode="wait">
           
           {activeTab === 'home' && (
@@ -227,29 +225,30 @@ export default function ScholarOS() {
               <div className="lg:col-span-8 space-y-14">
                 <header className="flex justify-between items-end border-b border-white/5 pb-12">
                   <div>
-                    <h2 className="text-8xl font-black uppercase tracking-tighter leading-none">Terminal</h2>
+                    <h2 className="text-6xl lg:text-8xl font-black uppercase tracking-tighter leading-none">Terminal</h2>
                     <p className="text-blue-500/60 font-black text-[10px] uppercase tracking-[0.6em] mt-6 flex items-center gap-2">
                         <Flame size={12}/> SYSTEM ACTIVE • {getBadgeLabel()} PROTOCOL
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-7xl font-mono font-black text-emerald-400">{sc}</p>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-5xl lg:text-7xl font-mono font-black text-emerald-400">{sc}</p>
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">CREDITS EARNED</p>
                   </div>
                 </header>
 
                 <div className="space-y-16 pb-20">
                   {/* Daily Reward Sync */}
-                  <motion.div whileHover={{ scale: 1.02 }} className="p-10 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-[3.5rem] border border-blue-500/30 flex justify-between items-center shadow-2xl">
-                    <div className="flex items-center gap-8">
+                  <motion.div whileHover={{ scale: 1.02 }} className="p-10 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-[2.5rem] border border-blue-500/30 flex justify-between items-center shadow-2xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-blue-500/10 blur-3xl"/>
+                    <div className="flex items-center gap-8 relative z-10">
                       <Rocket className="text-blue-400" size={40}/>
                       <div>
                         <p className="text-lg font-black uppercase">Daily Sync Reward</p>
                         <p className="text-[11px] text-blue-400 font-bold uppercase tracking-widest">Multiplier: x{1 + (streak * 0.1).toFixed(1)}</p>
                       </div>
                     </div>
-                    <button onClick={claimDaily} className={`px-12 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all ${lastClaimDate === new Date().toLocaleDateString() ? 'bg-white/5 text-white/20 cursor-default' : 'bg-blue-600 shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95'}`}>
-                      {lastClaimDate === new Date().toLocaleDateString() ? 'Claimed Today' : `Claim +${50 + (streak * 10)} SC`}
+                    <button onClick={claimDaily} className={`relative z-10 px-8 lg:px-12 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all ${lastClaimDate === new Date().toLocaleDateString() ? 'bg-white/5 text-white/20 cursor-default' : 'bg-blue-600 shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95'}`}>
+                      {lastClaimDate === new Date().toLocaleDateString() ? 'Claimed' : 'Claim'}
                     </button>
                   </motion.div>
 
@@ -264,15 +263,13 @@ export default function ScholarOS() {
 
                   <TaskGroup title="2. EXAM POWER PLAYS">
                     <TaskItem icon={<Binary/>} name="Maths: Proof Mastery" sc={30} onClick={()=>addSC(30)}/>
-                    <TaskItem icon={<Calculator/>} name="Maths: The Long Game (Part B)" sc={25} onClick={()=>addSC(25)}/>
-                    <TaskItem icon={<Binary/>} name="Maths: Pattern Recognition" sc={20} onClick={()=>addSC(20)}/>
-                    <TaskItem icon={<Microscope/>} name="Physics: Lab Report/Sim" sc={35} onClick={()=>addSC(35)}/>
+                    <TaskItem icon={<Calculator/>} name="Maths: The Long Game" sc={25} onClick={()=>addSC(25)}/>
+                    <TaskItem icon={<Binary/>} name="Maths: Pattern Rec." sc={20} onClick={()=>addSC(20)}/>
+                    <TaskItem icon={<Microscope/>} name="Physics: Lab Report" sc={35} onClick={()=>addSC(35)}/>
                     <TaskItem icon={<Wand2/>} name="Physics: The Architect" sc={30} onClick={()=>addSC(30)}/>
                     <TaskItem icon={<Palette/>} name="Physics: The Visualizer" sc={15} onClick={()=>addSC(15)}/>
-                    <TaskItem icon={<Brain/>} name="Chem: The Alchemist (Synthesis)" sc={30} onClick={()=>addSC(30)}/>
-                    <TaskItem icon={<Microscope/>} name="Chem: Color Guru" sc={25} onClick={()=>addSC(25)}/>
-                    <TaskItem icon={<FlaskConical/>} name="Chem: The Balancer (Redox)" sc={20} onClick={()=>addSC(20)}/>
-                    <TaskItem icon={<Beaker/>} name="Chem: Stoichiometry Master" sc={20} onClick={()=>addSC(20)}/>
+                    <TaskItem icon={<Brain/>} name="Chem: The Alchemist" sc={30} onClick={()=>addSC(30)}/>
+                    <TaskItem icon={<FlaskConical/>} name="Chem: The Balancer" sc={20} onClick={()=>addSC(20)}/>
                   </TaskGroup>
 
                   <TaskGroup title="3. MINDSET & HEROIC FEATS">
@@ -290,11 +287,11 @@ export default function ScholarOS() {
               </div>
 
               {/* LOFI STICKY */}
-              <aside className="lg:col-span-4 space-y-12">
-                <div className="bg-white/5 p-12 rounded-[4rem] border border-white/10 sticky top-14 backdrop-blur-3xl shadow-2xl">
+              <aside className="lg:col-span-4 space-y-12 hidden lg:block">
+                <div className="bg-white/5 p-12 rounded-[3rem] border border-white/10 sticky top-14 backdrop-blur-3xl shadow-2xl">
                   <h3 className="text-xs font-black text-indigo-400 mb-10 uppercase tracking-[0.5em] flex items-center gap-4"><Music size={20}/> Focus Audio</h3>
                   <div className="text-center">
-                    <p className="text-[10px] font-black text-white/30 mb-8 uppercase tracking-widest">{LOFI_LIBRARY[currentTrackIdx].name}</p>
+                    <p className="text-[10px] font-black text-white/30 mb-8 uppercase tracking-widest truncate">{LOFI_LIBRARY[currentTrackIdx].name}</p>
                     <div className="flex items-center justify-center gap-12">
                       <button onClick={() => setCurrentTrackIdx(p => (p === 0 ? LOFI_LIBRARY.length-1 : p-1))}><SkipBack size={28}/></button>
                       <button onClick={() => { setIsPlaying(!isPlaying); isPlaying ? audioRef.current?.pause() : audioRef.current?.play(); }} 
@@ -314,34 +311,64 @@ export default function ScholarOS() {
             <motion.div key="a" initial={{opacity:0}} animate={{opacity:1}} className="space-y-14">
               <h2 className="text-7xl font-black uppercase tracking-tighter">Analysis</h2>
               <div className="grid md:grid-cols-2 gap-12">
-                <div className="bg-white/5 p-14 rounded-[4rem] border border-white/10 h-[500px] flex flex-col shadow-2xl">
-                  <h4 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.4em] mb-12">Credit Velocity</h4>
-                  <div className="flex-1 flex items-end gap-6 pb-6">
-                    {dailyHistory.slice(-7).map((h, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-4">
-                        <motion.div initial={{height:0}} animate={{height: `${Math.min((h.sc/300)*100, 100)}%`}} 
-                          className="w-full bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-[2rem] shadow-xl" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{h.date.split('/')[0]}</span>
+                
+                {/* 1. Credit Velocity (Activity) */}
+                <div className="bg-white/5 p-14 rounded-[3rem] border border-white/10 h-[500px] flex flex-col shadow-2xl">
+                  <h4 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.4em] mb-12">7-Day Velocity</h4>
+                  <div className="flex-1 flex items-end gap-6 pb-6 relative">
+                    {/* Background Grid Lines */}
+                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
+                        <div className="w-full h-px bg-white"/>
+                        <div className="w-full h-px bg-white"/>
+                        <div className="w-full h-px bg-white"/>
+                    </div>
+                    
+                    {dailyHistory.length > 0 ? dailyHistory.map((h, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-4 z-10 group">
+                        <div className="relative w-full h-full flex items-end">
+                            <motion.div 
+                                initial={{height:0}} 
+                                animate={{height: `${Math.min((h.sc/400)*100, 100)}%`}} 
+                                className="w-full bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] group-hover:bg-indigo-400 transition-colors" 
+                            />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{h.date}</span>
                       </div>
-                    ))}
-                    {dailyHistory.length === 0 && <div className="w-full text-center text-white/20 uppercase font-black text-xs">Awaiting Data...</div>}
+                    )) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/20 font-black uppercase tracking-widest text-sm">
+                            Start completing tasks to see data
+                        </div>
+                    )}
                   </div>
                 </div>
-                <div className="bg-white/5 p-14 rounded-[4rem] border border-white/10 h-[500px] shadow-2xl">
-                  <h4 className="text-[11px] font-black text-purple-400 uppercase tracking-[0.4em] mb-12">Subject Spread</h4>
-                  <div className="space-y-10">
-                    {examResults.slice(-5).map((ex, i) => (
-                      <div key={i} className="space-y-4">
-                        <div className="flex justify-between text-xs font-black uppercase text-slate-400 tracking-widest">
+
+                {/* 2. Subject Spread (Marks) */}
+                <div className="bg-white/5 p-14 rounded-[3rem] border border-white/10 h-[500px] shadow-2xl overflow-y-auto custom-scrollbar">
+                  <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-12">Recent Marks</h4>
+                  <div className="space-y-8">
+                    {examResults.length > 0 ? examResults.slice().reverse().map((ex, i) => (
+                      <div key={i} className="space-y-3">
+                        <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 tracking-widest">
                             <span>{ex.subject}</span>
-                            <span className="text-emerald-400">{ex.mark}%</span>
+                            <span className="text-white">{ex.mark}%</span>
                         </div>
-                        <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                            <motion.div initial={{width:0}} animate={{width: `${ex.mark}%`}} className="h-full bg-emerald-500 shadow-[0_0_15px_#10b981]" />
+                        {/* Progress Bar Container */}
+                        <div className="h-4 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                            <motion.div 
+                                initial={{width:0}} 
+                                animate={{width: `${ex.mark}%`}} 
+                                transition={{duration: 1, ease: "easeOut"}}
+                                className={`h-full ${ex.mark >= 75 ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : ex.mark >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                            />
                         </div>
                       </div>
-                    ))}
-                    {examResults.length === 0 && <div className="h-full flex items-center justify-center text-white/20 uppercase font-black text-xs">No Exam Data</div>}
+                    )) : (
+                        <div className="h-full flex flex-col items-center justify-center text-white/20 gap-4">
+                            <ClipboardList size={40} className="opacity-20"/>
+                            <span className="font-black uppercase tracking-widest text-xs">No Exam Data Found</span>
+                            <button onClick={()=>setActiveTab('exams')} className="text-[10px] text-blue-400 underline uppercase tracking-widest">Go to Exams Tab</button>
+                        </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -392,12 +419,13 @@ export default function ScholarOS() {
                   setExamResults(up);
                   localStorage.setItem(`exams_${name}`, JSON.stringify(up));
                   e.target.reset();
+                  alert("Mark Recorded! Check Analytics tab.");
                 }}>
-                  <select name="sub" className="bg-black border border-white/10 rounded-2xl p-5 text-[10px] font-black uppercase tracking-widest" required>
+                  <select name="sub" className="bg-black border border-white/10 rounded-2xl p-5 text-[10px] font-black uppercase tracking-widest text-white" required>
                     {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <input name="mrk" type="number" placeholder="Mark (%)" className="bg-black border border-white/10 rounded-2xl p-5 text-xs font-black" required />
-                  <button type="submit" className="bg-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Record</button>
+                  <input name="mrk" type="number" placeholder="Mark (%)" className="bg-black border border-white/10 rounded-2xl p-5 text-xs font-black text-white" required />
+                  <button type="submit" className="bg-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all text-white">Record</button>
                 </form>
                 <div className="space-y-4">
                   {examResults.map((ex, i) => (
@@ -423,57 +451,73 @@ export default function ScholarOS() {
   );
 }
 
-// --- UI COMPONENTS ---
+// --- REFINED UI COMPONENTS ---
+
 function NavBtn({icon, label, active, onClick}: any) {
   return (
-    <button onClick={onClick} className={`w-full p-6 flex items-center gap-8 rounded-[2rem] transition-all ${active ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-      {icon} <span className="hidden lg:block text-[11px] font-black uppercase tracking-[0.4em] leading-none">{label}</span>
+    <button onClick={onClick} className={`w-full p-6 flex items-center gap-6 lg:gap-8 rounded-[2rem] transition-all group ${active ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+      <span className="group-hover:scale-110 transition-transform">{icon}</span>
+      <span className="hidden lg:block text-[11px] font-black uppercase tracking-[0.4em] leading-none">{label}</span>
     </button>
   );
 }
 
 function TaskGroup({title, children}: any) {
   return (
-    <div className="space-y-10">
-      <h3 className="text-[12px] font-black text-blue-500/50 uppercase tracking-[0.6em] ml-10">{title}</h3>
-      <div className="grid md:grid-cols-2 gap-8">{children}</div>
+    <div className="space-y-8">
+      <h3 className="text-[12px] font-black text-blue-500/50 uppercase tracking-[0.6em] ml-2 lg:ml-10">{title}</h3>
+      <div className="grid md:grid-cols-2 gap-6">{children}</div>
     </div>
   );
 }
 
+// FIXED TASK ITEM: Better spacing, button alignment, and refined typography
 function TaskItem({name, sc, icon, onClick, gold}: any) {
   return (
-    <motion.div whileHover={{ x: 10 }} className={`p-10 rounded-[3.5rem] border transition-all flex items-center justify-between ${gold ? 'bg-yellow-500/5 border-yellow-500/20 shadow-2xl shadow-yellow-500/5' : 'bg-white/5 border-white/10'}`}>
-      <div className="flex items-center gap-8">
-        <div className={gold ? 'text-yellow-500' : 'text-blue-500'}>{icon}</div>
+    <motion.div 
+      whileHover={{ y: -5 }} 
+      onClick={onClick}
+      className={`relative overflow-hidden cursor-pointer p-6 lg:p-8 rounded-[2.5rem] border transition-all flex items-center justify-between gap-4 ${gold ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/10' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+    >
+      <div className="flex items-center gap-6">
+        <div className={`p-4 rounded-2xl ${gold ? 'bg-amber-500/20 text-amber-500' : 'bg-blue-500/20 text-blue-400'}`}>
+            {icon}
+        </div>
         <div>
-          <p className="text-sm font-black uppercase tracking-tight leading-none">{name}</p>
-          <p className="text-emerald-400 text-[11px] font-bold tracking-widest mt-3">+{sc} SC</p>
+          <p className={`text-xs lg:text-sm font-black uppercase tracking-tight leading-tight ${gold ? 'text-amber-100' : 'text-slate-200'}`}>{name}</p>
+          <p className={`text-[10px] font-bold tracking-widest mt-2 ${gold ? 'text-amber-400' : 'text-emerald-400'}`}>+{sc} SC</p>
         </div>
       </div>
-      <button onClick={onClick} className="px-8 py-4 bg-blue-600/10 hover:bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all">Claim</button>
+      
+      <button className={`shrink-0 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${gold ? 'bg-amber-500 text-black hover:bg-amber-400' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+        Claim
+      </button>
     </motion.div>
   );
 }
 
 function StoreCard({title, children}: any) {
   return (
-    <div className="bg-white/5 p-14 rounded-[4rem] border border-white/10 backdrop-blur-3xl shadow-2xl">
+    <div className="bg-white/5 p-10 lg:p-14 rounded-[3rem] border border-white/10 backdrop-blur-3xl shadow-2xl">
       <h4 className="text-[12px] font-black text-slate-500 mb-12 uppercase tracking-[0.5em] text-center">{title}</h4>
-      <div className="space-y-6">{children}</div>
+      <div className="space-y-4">{children}</div>
     </div>
   );
 }
 
 function StoreItem({name, cost, emoji, unlocked, onClick}: any) {
   return (
-    <motion.div onClick={unlocked ? undefined : onClick} whileHover={{ scale: 1.05 }}
-      className="flex justify-between items-center p-8 bg-black/40 rounded-[2.5rem] border border-white/5 cursor-pointer hover:border-emerald-500/40 transition-all">
+    <motion.button 
+        onClick={unlocked ? undefined : onClick} 
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`w-full flex justify-between items-center p-6 lg:p-8 rounded-[2rem] border transition-all ${unlocked ? 'bg-emerald-900/20 border-emerald-500/30 cursor-default' : 'bg-black/40 border-white/5 hover:border-white/20 hover:bg-white/5'}`}
+    >
       <div className="flex items-center gap-6">
-        <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-2xl">{emoji}</motion.span>
-        <span className="text-[11px] font-black uppercase text-white/70 tracking-tight">{name}</span>
+        <span className="text-2xl">{emoji}</span>
+        <span className={`text-[10px] lg:text-[11px] font-black uppercase tracking-tight ${unlocked ? 'text-emerald-400' : 'text-white/70'}`}>{name}</span>
       </div>
-      <span className="text-[11px] font-black text-emerald-400 tracking-widest">{unlocked ? 'OWNED' : `-${cost} SC`}</span>
-    </motion.div>
+      <span className={`text-[10px] font-black tracking-widest ${unlocked ? 'text-emerald-500' : 'text-blue-400'}`}>{unlocked ? 'OWNED' : `-${cost} SC`}</span>
+    </motion.button>
   );
 }
