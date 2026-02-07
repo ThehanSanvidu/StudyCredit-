@@ -6,11 +6,11 @@ import {
   Plus, Brain, Calculator, RotateCcw, Layout, Edit3, FlaskConical, Beaker, 
   Ghost, GraduationCap, Microscope, Palette, Binary, AlertTriangle, Calendar, 
   ShoppingCart, Coffee, FastForward, Star, SkipForward, SkipBack, Apple, 
-  BarChart3, ClipboardList, Home, Crown, Sparkles, Gem, Rocket, Heart, Dumbbell
+  BarChart3, ClipboardList, Home, Crown, Sparkles, Gem, Rocket, Heart, Dumbbell, Smartphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// --- CONSTANTS & TYPES ---
+// --- CONSTANTS & DATA ---
 const SUBJECTS = ["Physics", "Chemistry", "General English", "Applied Maths", "Pure Maths", "General Knowledge"];
 const PROFILE_EMOJIS = ["👨‍🎓", "🧠", "⚡", "🚀", "🔭", "🧪", "🧬", "📚", "🏆", "🔥", "☄️", "🛡️", "🧬", "🪐"];
 
@@ -50,6 +50,7 @@ export default function ScholarOS() {
   const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Initialize Data
   useEffect(() => {
     const savedName = localStorage.getItem('study_sync_name') || "Scholar";
     setName(savedName);
@@ -62,9 +63,11 @@ export default function ScholarOS() {
     setExamResults(JSON.parse(localStorage.getItem(`exams_${savedName}`) || '[]'));
 
     audioRef.current = new Audio(LOFI_LIBRARY[0].url);
+    // Auto-loop to next track
     audioRef.current.onended = () => setCurrentTrackIdx(p => (p + 1) % LOFI_LIBRARY.length);
   }, []);
 
+  // Timer Logic
   useEffect(() => {
     let interval: any;
     if (isActive) {
@@ -78,6 +81,7 @@ export default function ScholarOS() {
     return () => clearInterval(interval);
   }, [isActive, timerMode, timeLeft, stopwatchTime]);
 
+  // Audio Logic
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.src = LOFI_LIBRARY[currentTrackIdx].url;
@@ -89,10 +93,14 @@ export default function ScholarOS() {
     const total = sc + amount;
     setSc(total);
     localStorage.setItem(`sc_${name}`, total.toString());
+    
+    // Update History for Analytics
     const today = new Date().toLocaleDateString();
     const newHist = [...dailyHistory];
     const idx = newHist.findIndex(h => h.date === today);
-    idx > -1 ? newHist[idx].sc += amount : newHist.push({ date: today, sc: amount });
+    if (idx > -1) newHist[idx].sc += amount;
+    else newHist.push({ date: today, sc: amount });
+    
     setDailyHistory(newHist);
     localStorage.setItem(`history_${name}`, JSON.stringify(newHist));
     confetti();
@@ -100,14 +108,33 @@ export default function ScholarOS() {
 
   const claimDaily = () => {
     const today = new Date().toLocaleDateString();
-    if (lastClaimDate === today) return alert("Already claimed! 🏃‍♂️");
+    if (lastClaimDate === today) return alert("Already claimed today! 🏃‍♂️");
+    
     const newStreak = streak + 1;
     const reward = 50 + (newStreak * 10);
+    
     setStreak(newStreak);
     setLastClaimDate(today);
     addSC(reward);
+    
     localStorage.setItem(`streak_${name}`, newStreak.toString());
     localStorage.setItem(`claim_${name}`, today);
+  };
+
+  const buyItem = (cost: number, id: string, type: 'track' | 'virtual' | 'real') => {
+    if (sc >= cost) {
+      setSc(s => s - cost);
+      if (type === 'track') {
+        const up = [...unlockedTracks, id];
+        setUnlockedTracks(up);
+        localStorage.setItem(`tracks_${name}`, JSON.stringify(up));
+      } else if (type === 'virtual') {
+        const up = [...unlockedRewards, id];
+        setUnlockedRewards(up);
+        localStorage.setItem(`rewards_${name}`, JSON.stringify(up));
+      }
+      confetti();
+    } else { alert("Insufficient Credits! 💎"); }
   };
 
   // Badge Logic
@@ -146,11 +173,15 @@ export default function ScholarOS() {
       <AnimatePresence>
         {isGhostMode && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center">
-            <h1 className="text-[15rem] font-mono font-black opacity-80">
+             <div className="flex gap-10 mb-16 opacity-30 text-[10px] font-black tracking-[0.5em]">
+              <button onClick={() => setTimerMode('pomodoro')} className={timerMode==='pomodoro' ? 'text-white underline' : ''}>TIMER</button>
+              <button onClick={() => setTimerMode('stopwatch')} className={timerMode==='stopwatch' ? 'text-white underline' : ''}>STOPWATCH</button>
+            </div>
+            <h1 className="text-[15rem] font-mono font-black opacity-80 leading-none">
               {Math.floor((timerMode === 'pomodoro' ? timeLeft : stopwatchTime) / 60)}:
               {((timerMode === 'pomodoro' ? timeLeft : stopwatchTime) % 60).toString().padStart(2, '0')}
             </h1>
-            <div className="flex gap-10 mt-10">
+            <div className="flex gap-10 mt-16">
               <button onClick={() => setIsActive(!isActive)} className="px-16 py-5 bg-white text-black font-black uppercase rounded-full">{isActive ? 'PAUSE' : 'START'}</button>
               <button onClick={() => setIsGhostMode(false)} className="px-10 py-5 text-white/20 hover:text-white uppercase text-[10px] font-black">[ TERMINATE ]</button>
             </div>
@@ -231,7 +262,7 @@ export default function ScholarOS() {
                     <TaskItem icon={<Calendar/>} name="End-of-Day Review" sc={20} onClick={()=>addSC(20)}/>
                   </TaskGroup>
 
-                  <TaskGroup title="2. EXAM POWER PLAYS (PDF COMPLETE)">
+                  <TaskGroup title="2. EXAM POWER PLAYS">
                     <TaskItem icon={<Binary/>} name="Maths: Proof Mastery" sc={30} onClick={()=>addSC(30)}/>
                     <TaskItem icon={<Calculator/>} name="Maths: The Long Game (Part B)" sc={25} onClick={()=>addSC(25)}/>
                     <TaskItem icon={<Binary/>} name="Maths: Pattern Recognition" sc={20} onClick={()=>addSC(20)}/>
@@ -293,6 +324,7 @@ export default function ScholarOS() {
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{h.date.split('/')[0]}</span>
                       </div>
                     ))}
+                    {dailyHistory.length === 0 && <div className="w-full text-center text-white/20 uppercase font-black text-xs">Awaiting Data...</div>}
                   </div>
                 </div>
                 <div className="bg-white/5 p-14 rounded-[4rem] border border-white/10 h-[500px] shadow-2xl">
@@ -309,13 +341,14 @@ export default function ScholarOS() {
                         </div>
                       </div>
                     ))}
+                    {examResults.length === 0 && <div className="h-full flex items-center justify-center text-white/20 uppercase font-black text-xs">No Exam Data</div>}
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* THE VAULT (STORE) */}
+          {/* STORE TAB */}
           {activeTab === 'store' && (
             <motion.div key="s" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} className="max-w-7xl mx-auto space-y-16 pb-20">
               <header className="text-center">
@@ -325,7 +358,6 @@ export default function ScholarOS() {
                     <p className="text-purple-400 font-mono text-3xl font-black">STREAK: {streak}</p>
                 </div>
               </header>
-
               <div className="grid md:grid-cols-3 gap-12">
                 <StoreCard title="🎧 AUDIO UNLOCKS">
                   {LOFI_LIBRARY.slice(1, 6).map(t => (
@@ -348,13 +380,50 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
+          {/* EXAMS TAB */}
+          {activeTab === 'exams' && (
+            <motion.div key="e" initial={{opacity:0}} animate={{opacity:1}} className="max-w-4xl mx-auto space-y-12">
+              <h2 className="text-6xl font-black uppercase tracking-tighter text-center">Registry</h2>
+              <div className="bg-white/5 p-12 rounded-[3.5rem] border border-white/10">
+                <form className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12" onSubmit={(e:any) => {
+                  e.preventDefault();
+                  const newResult = { subject: e.target.sub.value, mark: Number(e.target.mrk.value), date: new Date().toLocaleDateString() };
+                  const up = [...examResults, newResult];
+                  setExamResults(up);
+                  localStorage.setItem(`exams_${name}`, JSON.stringify(up));
+                  e.target.reset();
+                }}>
+                  <select name="sub" className="bg-black border border-white/10 rounded-2xl p-5 text-[10px] font-black uppercase tracking-widest" required>
+                    {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <input name="mrk" type="number" placeholder="Mark (%)" className="bg-black border border-white/10 rounded-2xl p-5 text-xs font-black" required />
+                  <button type="submit" className="bg-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Record</button>
+                </form>
+                <div className="space-y-4">
+                  {examResults.map((ex, i) => (
+                    <div key={i} className="flex justify-between items-center p-6 bg-black/40 rounded-3xl border border-white/5">
+                      <div className="flex items-center gap-5">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                        <span className="font-black text-xs uppercase text-slate-400 tracking-widest">{ex.subject}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-2xl text-emerald-400">{ex.mark}%</span>
+                        <p className="text-[8px] text-slate-700 font-bold uppercase tracking-widest mt-1">{ex.date}</p>
+                      </div>
+                    </div>
+                  )).reverse()}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
     </div>
   );
 }
 
-// --- SUB-COMPONENTS ---
+// --- UI COMPONENTS ---
 function NavBtn({icon, label, active, onClick}: any) {
   return (
     <button onClick={onClick} className={`w-full p-6 flex items-center gap-8 rounded-[2rem] transition-all ${active ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
