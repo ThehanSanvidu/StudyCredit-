@@ -6,12 +6,20 @@ import {
   Brain, Calculator, RotateCcw, Layout, Edit3, FlaskConical, Beaker, 
   Ghost, GraduationCap, Microscope, Palette, Binary, Calendar, 
   ShoppingCart, Coffee, FastForward, Star, SkipForward, SkipBack, Apple, 
-  BarChart3, ClipboardList, Home, Radio, Disc, Volume2, Timer, Settings, Dumbbell, Smartphone, AlertCircle, Link
+  BarChart3, ClipboardList, Home, Radio, Disc, Volume2, Timer, Settings, Dumbbell, Smartphone, AlertCircle, Link,
+  BookOpen, TrendingUp, Plus, Gift, Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 // --- CONSTANTS ---
-const SUBJECTS = ["Physics", "Chemistry", "Combined Maths"];
+const SUBJECTS = [
+  { id: 'phy', name: 'Physics', color: '#a855f7', emoji: '⚛️' },
+  { id: 'chem', name: 'Chemistry', color: '#10b981', emoji: '🧪' },
+  { id: 'applied', name: 'Applied Maths', color: '#3b82f6', emoji: '📊' },
+  { id: 'pure', name: 'Pure Maths', color: '#f59e0b', emoji: '📐' },
+  { id: 'english', name: 'General English', color: '#ec4899', emoji: '📚' },
+  { id: 'gk', name: 'General Knowledge', color: '#8b5cf6', emoji: '🌍' }
+];
 
 const LOFI_LIBRARY = [
   { id: 't1', name: 'Deep Space Focus', emoji: '🌌', url: 'https://stream.zeno.fm/0r0xa792kwzuv', cost: 0, unlocked: true },
@@ -25,16 +33,69 @@ const LOFI_LIBRARY = [
   { id: 't10', name: 'Nebula Drift', emoji: '🪐', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', cost: 500, unlocked: false },
 ];
 
+// Bubble Background Component
+function LiquidGlassBubbles() {
+  const bubbles = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 100 + 50,
+    x: Math.random() * 100,
+    delay: Math.random() * 5,
+    duration: Math.random() * 10 + 15,
+  }));
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {bubbles.map((bubble) => (
+        <motion.div
+          key={bubble.id}
+          className="absolute rounded-full"
+          style={{
+            width: bubble.size,
+            height: bubble.size,
+            left: `${bubble.x}%`,
+            background: `radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.05))`,
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+          }}
+          animate={{
+            y: [1000, -200],
+            x: [0, Math.random() * 100 - 50, 0],
+            scale: [1, 1.2, 1],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: bubble.duration,
+            delay: bubble.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ScholarOS() {
-  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects'>('home');
   const [sc, setSc] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0); 
   const [name, setName] = useState("Scholar");
   const [isGhostMode, setIsGhostMode] = useState(false);
   
+  // Daily Bonus State
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [lastClaimDate, setLastClaimDate] = useState("");
+  const [showBonusModal, setShowBonusModal] = useState(false);
+  
+  // Exam Marks State
+  const [examMarks, setExamMarks] = useState<Record<string, number[]>>({});
+  const [showAddMarkModal, setShowAddMarkModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [newMark, setNewMark] = useState("");
+  
   // Stats
   const [streak, setStreak] = useState(0);
-  const [lastClaimDate, setLastClaimDate] = useState("");
   const [unlockedTracks, setUnlockedTracks] = useState<string[]>(['t1']);
   const [unlockedRewards, setUnlockedRewards] = useState<string[]>([]);
 
@@ -56,6 +117,9 @@ export default function ScholarOS() {
     setTotalSeconds(Number(localStorage.getItem(`total_secs_${savedName}`)) || 0);
     setUnlockedTracks(JSON.parse(localStorage.getItem(`tracks_${savedName}`) || '["t1"]'));
     setUnlockedRewards(JSON.parse(localStorage.getItem(`rewards_${savedName}`) || '[]'));
+    setExamMarks(JSON.parse(localStorage.getItem(`exam_marks_${savedName}`) || '{}'));
+    setDailyStreak(Number(localStorage.getItem(`daily_streak_${savedName}`)) || 0);
+    setLastClaimDate(localStorage.getItem(`last_claim_${savedName}`) || "");
 
     // Create audio element
     audioRef.current = new Audio();
@@ -69,6 +133,72 @@ export default function ScholarOS() {
       }
     };
   }, []);
+
+  // Check daily bonus availability
+  const canClaimBonus = () => {
+    const today = new Date().toDateString();
+    return lastClaimDate !== today;
+  };
+
+  const claimDailyBonus = () => {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    
+    let newStreak = dailyStreak;
+    if (lastClaimDate === yesterday) {
+      newStreak = dailyStreak + 1;
+    } else if (lastClaimDate !== today) {
+      newStreak = 1;
+    }
+    
+    const bonusAmount = 50 + (newStreak * 10);
+    addSC(bonusAmount);
+    
+    setDailyStreak(newStreak);
+    setLastClaimDate(today);
+    localStorage.setItem(`daily_streak_${name}`, newStreak.toString());
+    localStorage.setItem(`last_claim_${name}`, today);
+    
+    setShowBonusModal(false);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
+  const addExamMark = () => {
+    if (!selectedSubject || !newMark) return;
+    
+    const mark = parseFloat(newMark);
+    if (isNaN(mark) || mark < 0 || mark > 100) {
+      alert("Please enter a valid mark between 0 and 100! 📝");
+      return;
+    }
+    
+    const updated = {
+      ...examMarks,
+      [selectedSubject]: [...(examMarks[selectedSubject] || []), mark]
+    };
+    
+    setExamMarks(updated);
+    localStorage.setItem(`exam_marks_${name}`, JSON.stringify(updated));
+    setShowAddMarkModal(false);
+    setNewMark("");
+    confetti();
+  };
+
+  const getSubjectAverage = (subjectId: string) => {
+    const marks = examMarks[subjectId] || [];
+    if (marks.length === 0) return 0;
+    return marks.reduce((a, b) => a + b, 0) / marks.length;
+  };
+
+  const getOverallAverage = () => {
+    const allMarks = Object.values(examMarks).flat();
+    if (allMarks.length === 0) return 0;
+    return allMarks.reduce((a, b) => a + b, 0) / allMarks.length;
+  };
 
   useEffect(() => {
     if (audioRef.current) {
@@ -160,8 +290,11 @@ export default function ScholarOS() {
   return (
     <div className={`min-h-screen ${isGhostMode ? 'bg-black' : 'bg-[#01040a]'} text-white font-sans flex flex-col lg:flex-row overflow-hidden relative transition-colors duration-500`}>
       
+      {/* Animated Background */}
+      <LiquidGlassBubbles />
+      
       {/* 🧊 RESPONSIVE NAV */}
-      <nav className="w-full lg:w-24 xl:w-72 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 p-4 lg:p-8 flex lg:flex-col items-center justify-between lg:justify-start gap-4 lg:gap-8 z-[100] backdrop-blur-2xl">
+      <nav className="w-full lg:w-24 xl:w-72 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 p-4 lg:p-8 flex lg:flex-col items-center justify-between lg:justify-start gap-4 lg:gap-8 z-[100] backdrop-blur-2xl relative">
         <div className="w-10 h-10 lg:w-16 lg:h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
           <GraduationCap size={32} />
         </div>
@@ -169,18 +302,31 @@ export default function ScholarOS() {
         <div className="flex lg:flex-col gap-2 lg:gap-4 overflow-x-auto lg:overflow-visible no-scrollbar">
           <NavBtn icon={<Home/>} active={activeTab==='home'} onClick={()=>setActiveTab('home')} label="Terminal"/>
           <NavBtn icon={<Timer/>} active={activeTab==='focus'} onClick={()=>setActiveTab('focus')} label="Focus Hub"/>
+          <NavBtn icon={<BookOpen/>} active={activeTab==='subjects'} onClick={()=>setActiveTab('subjects')} label="Subjects"/>
           <NavBtn icon={<BarChart3/>} active={activeTab==='analytics'} onClick={()=>setActiveTab('analytics')} label="Analytics"/>
           <NavBtn icon={<Radio/>} active={activeTab==='audio'} onClick={()=>setActiveTab('audio')} label="Audio"/>
           <NavBtn icon={<ShoppingCart/>} active={activeTab==='store'} onClick={()=>setActiveTab('store')} label="The Vault"/>
         </div>
         
-        <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-auto p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3">
+        {/* Daily Bonus Button */}
+        {canClaimBonus() && (
+          <motion.button 
+            onClick={()=>setShowBonusModal(true)}
+            className="hidden lg:flex mt-auto p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl transition-all items-center gap-3 shadow-lg shadow-amber-500/30"
+            animate={{scale: [1, 1.05, 1]}}
+            transition={{repeat: Infinity, duration: 2}}
+          >
+            <Gift size={20}/> <span className="hidden xl:block text-[10px] font-black tracking-widest">BONUS</span>
+          </motion.button>
+        )}
+        
+        <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-4 p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3">
           <Ghost size={20}/> <span className="hidden xl:block text-[10px] font-black tracking-widest">GHOST</span>
         </button>
       </nav>
 
       {/* 📺 MAIN WORKSPACE */}
-      <main className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-12 pb-24 lg:pb-12">
+      <main className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-12 pb-24 lg:pb-12 relative z-10">
         <AnimatePresence mode="wait">
           
           {/* 🏠 TERMINAL */}
@@ -188,10 +334,10 @@ export default function ScholarOS() {
             <motion.div key="h" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
               <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
                 <div>
-                  <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal</h2>
+                  <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
                   <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
                 </div>
-                <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10">
+                <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
                   <div className="text-right">
                     <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Credits</p>
@@ -200,6 +346,12 @@ export default function ScholarOS() {
                     <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Time</p>
                   </div>
+                  {dailyStreak > 0 && (
+                    <div className="text-right border-l border-white/10 pl-8">
+                      <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Day Streak</p>
+                    </div>
+                  )}
                 </div>
               </header>
 
@@ -245,6 +397,112 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
+          {/* 📚 SUBJECTS TAB */}
+          {activeTab === 'subjects' && (
+            <motion.div key="sub" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-5xl font-black uppercase tracking-tighter">Exam Analytics 📚</h2>
+                  <p className="text-slate-400 text-sm mt-2">Overall Average: <span className="text-emerald-400 font-black text-2xl">{getOverallAverage().toFixed(1)}%</span></p>
+                </div>
+                <button 
+                  onClick={()=>setShowAddMarkModal(true)}
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center gap-2"
+                >
+                  <Plus size={20}/> Add Mark
+                </button>
+              </div>
+
+              {/* Subject Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {SUBJECTS.map(subject => {
+                  const marks = examMarks[subject.id] || [];
+                  const avg = getSubjectAverage(subject.id);
+                  const trend = marks.length >= 2 ? marks[marks.length - 1] - marks[marks.length - 2] : 0;
+                  
+                  return (
+                    <motion.div 
+                      key={subject.id}
+                      whileHover={{scale: 1.02}}
+                      className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] space-y-4"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-2xl mb-2">{subject.emoji}</p>
+                          <h3 className="text-sm font-black uppercase tracking-tight">{subject.name}</h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-black font-mono" style={{color: subject.color}}>
+                            {avg > 0 ? avg.toFixed(1) : '--'}
+                          </p>
+                          <p className="text-[8px] text-slate-500 font-black uppercase">Average</p>
+                        </div>
+                      </div>
+                      
+                      {/* Mini Bar Chart */}
+                      {marks.length > 0 && (
+                        <div className="h-20 flex items-end gap-1">
+                          {marks.slice(-10).map((mark, i) => (
+                            <div key={i} className="flex-1 relative group">
+                              <motion.div
+                                initial={{height: 0}}
+                                animate={{height: `${mark}%`}}
+                                className="absolute bottom-0 left-0 right-0 rounded-t"
+                                style={{backgroundColor: subject.color}}
+                              />
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-black bg-black px-2 py-1 rounded whitespace-nowrap">
+                                {mark}%
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between text-[10px] font-black">
+                        <span className="text-slate-500">Exams: {marks.length}</span>
+                        {trend !== 0 && (
+                          <span className={trend > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                            {trend > 0 ? '↗' : '↘'} {Math.abs(trend).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Overall Performance Chart */}
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] space-y-6">
+                <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Subject Comparison 📊</h3>
+                <div className="space-y-4">
+                  {SUBJECTS.map(subject => {
+                    const avg = getSubjectAverage(subject.id);
+                    return (
+                      <div key={subject.id} className="space-y-2">
+                        <div className="flex justify-between text-[10px] font-black uppercase">
+                          <span className="flex items-center gap-2">
+                            <span>{subject.emoji}</span>
+                            {subject.name}
+                          </span>
+                          <span style={{color: subject.color}}>{avg > 0 ? avg.toFixed(1) : '0'}%</span>
+                        </div>
+                        <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{width: 0}}
+                            animate={{width: `${avg}%`}}
+                            transition={{duration: 1, ease: "easeOut"}}
+                            className="h-full rounded-full"
+                            style={{backgroundColor: subject.color}}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* 📈 ANALYTICS WITH PROPER CHARTS */}
           {activeTab === 'analytics' && (
             <motion.div key="a" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} className="max-w-6xl mx-auto space-y-12">
@@ -252,7 +510,7 @@ export default function ScholarOS() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Subject Progress Bars */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] min-h-[300px]">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] min-h-[300px]">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Subject Spread 🧬</p>
                    <div className="space-y-6">
                       <SubjectBar label="Combined Maths" percent={75} color="bg-blue-500" />
@@ -262,7 +520,7 @@ export default function ScholarOS() {
                 </div>
 
                 {/* Weekly Bar Chart */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-between">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-between">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Credit Velocity 📈</p>
                    <div className="h-48 flex items-end gap-2 px-4">
                       {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
@@ -282,7 +540,7 @@ export default function ScholarOS() {
                 </div>
 
                 {/* Pie Chart - Study Distribution */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center justify-center">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center justify-center">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Study Distribution 🥧</p>
                    <div className="relative w-48 h-48">
                      <svg viewBox="0 0 100 100" className="transform -rotate-90">
@@ -302,7 +560,7 @@ export default function ScholarOS() {
                 </div>
 
                 {/* Line Chart - Weekly Progress */}
-                <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Weekly Trend 📉</p>
                    <svg viewBox="0 0 200 100" className="w-full h-32">
                      <motion.polyline
@@ -345,7 +603,7 @@ export default function ScholarOS() {
                 </p>
               </div>
               
-              <div className="bg-white/5 border border-white/10 p-8 rounded-[3rem] space-y-4">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] space-y-4">
                 {LOFI_LIBRARY.map((track, idx) => {
                   const isUnlocked = unlockedTracks.includes(track.id);
                   const isCurrent = currentTrackIdx === idx;
@@ -559,7 +817,7 @@ export default function ScholarOS() {
           {/* ⏱️ FOCUS HUB */}
           {activeTab === 'focus' && (
             <motion.div key="f" initial={{opacity:0}} animate={{opacity:1}} className="max-w-4xl mx-auto h-[70vh] flex flex-col items-center justify-center space-y-12">
-               <div className="flex bg-white/5 p-2 rounded-2xl border border-white/10">
+               <div className="flex bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10">
                   <button onClick={()=>setFocusMode('timer')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${focusMode==='timer' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Timer ⏱️</button>
                   <button onClick={()=>setFocusMode('stopwatch')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${focusMode==='stopwatch' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Stopwatch ⏲️</button>
                </div>
@@ -572,7 +830,7 @@ export default function ScholarOS() {
                   <button onClick={()=>setIsActive(!isActive)} className="px-12 py-5 bg-white text-black font-black uppercase rounded-2xl text-sm tracking-widest hover:scale-105 transition-transform">
                     {isActive ? '⏸️ Pause' : '▶️ Start'}
                   </button>
-                  <button onClick={()=>{setIsActive(false); focusMode==='timer' ? setTimeLeft(1500) : setStopwatchTime(0)}} className="p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                  <button onClick={()=>{setIsActive(false); focusMode==='timer' ? setTimeLeft(1500) : setStopwatchTime(0)}} className="p-5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
                     <RotateCcw/>
                   </button>
                </div>
@@ -581,6 +839,115 @@ export default function ScholarOS() {
 
         </AnimatePresence>
       </main>
+
+      {/* 🎁 DAILY BONUS MODAL */}
+      <AnimatePresence>
+        {showBonusModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowBonusModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-gradient-to-br from-amber-500 to-orange-600 p-12 rounded-[3rem] max-w-md text-center space-y-6 shadow-2xl"
+            >
+              <motion.div
+                animate={{rotate: [0, 10, -10, 0], scale: [1, 1.1, 1]}}
+                transition={{repeat: Infinity, duration: 2}}
+                className="text-8xl"
+              >
+                🎁
+              </motion.div>
+              <h2 className="text-4xl font-black uppercase">Daily Bonus!</h2>
+              <div className="space-y-2">
+                <p className="text-6xl font-black font-mono">{50 + (dailyStreak * 10)} SC 💎</p>
+                <p className="text-sm font-black uppercase tracking-widest">
+                  Day {dailyStreak + 1} Streak 🔥
+                </p>
+              </div>
+              <button 
+                onClick={claimDailyBonus}
+                className="w-full py-5 bg-white text-orange-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
+              >
+                Claim Bonus! ✨
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📝 ADD MARK MODAL */}
+      <AnimatePresence>
+        {showAddMarkModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowAddMarkModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">Add Exam Mark 📝</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select 
+                    value={selectedSubject}
+                    onChange={(e)=>setSelectedSubject(e.target.value)}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select Subject</option>
+                    {SUBJECTS.map(s => (
+                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Mark (%)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={newMark}
+                    onChange={(e)=>setNewMark(e.target.value)}
+                    placeholder="0-100"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-2xl text-center focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={()=>setShowAddMarkModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addExamMark}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase text-sm hover:bg-blue-500"
+                >
+                  Add Mark ✅
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 👻 GHOST MODE */}
       <AnimatePresence>
@@ -619,7 +986,7 @@ function TaskGroup({title, children}: any) {
 
 function TaskItem({name, sc, icon, onClick, gold}: any) {
   return (
-    <div className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${gold ? 'bg-amber-500/5 border-amber-500/20' : 'bg-white/5 border-white/10'}`}>
+    <div className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between backdrop-blur-xl ${gold ? 'bg-amber-500/5 border-amber-500/20' : 'bg-white/5 border-white/10'}`}>
       <div className="flex items-center gap-4">
         <div className={gold ? 'text-amber-500' : 'text-blue-500'}>{icon}</div>
         <div>
@@ -634,7 +1001,7 @@ function TaskItem({name, sc, icon, onClick, gold}: any) {
 
 function StoreCard({title, children}: any) {
   return (
-    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10">
+    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
       <h4 className="text-[10px] font-black text-slate-500 mb-8 uppercase tracking-[0.4em] text-center flex items-center justify-center gap-2">{title}</h4>
       <div className="space-y-3">{children}</div>
     </div>
