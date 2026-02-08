@@ -7,11 +7,14 @@ import {
   Ghost, GraduationCap, Microscope, Palette, Binary, Calendar, 
   ShoppingCart, Coffee, FastForward, Star, SkipForward, SkipBack, Apple, 
   BarChart3, ClipboardList, Home, Radio, Disc, Volume2, Timer, Settings, Dumbbell, Smartphone, AlertCircle, Link,
-  BookOpen, TrendingUp, Plus, Gift, Sparkles
+  BookOpen, TrendingUp, Plus, Gift, Sparkles, Download, FileText, Smile, Frown, Meh,
+  Award, PieChart, Activity, Flag, Rocket, CheckSquare, Square, Target as TargetIcon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 // --- CONSTANTS ---
+const EXAM_DATE = new Date('2026-08-15T09:00:00'); // 2026 A/L Exam Date
+
 const SUBJECTS = [
   { id: 'phy', name: 'Physics', color: '#a855f7', emoji: '⚛️' },
   { id: 'chem', name: 'Chemistry', color: '#10b981', emoji: '🧪' },
@@ -19,6 +22,87 @@ const SUBJECTS = [
   { id: 'pure', name: 'Pure Maths', color: '#f59e0b', emoji: '📐' },
   { id: 'english', name: 'General English', color: '#ec4899', emoji: '📚' },
   { id: 'gk', name: 'General Knowledge', color: '#8b5cf6', emoji: '🌍' }
+];
+
+// Hard-coded GCE A/L Syllabus
+const SYLLABUS = {
+  phy: {
+    name: 'Physics',
+    chapters: [
+      { id: 'p1', name: 'Measurements', topics: ['SI Units', 'Significant Figures', 'Dimensional Analysis', 'Error Analysis'] },
+      { id: 'p2', name: 'Mechanics', topics: ['Kinematics', 'Dynamics', 'Work & Energy', 'Momentum', 'Circular Motion'] },
+      { id: 'p3', name: 'Properties of Matter', topics: ['Elasticity', 'Fluid Mechanics', 'Surface Tension', 'Viscosity'] },
+      { id: 'p4', name: 'Oscillations & Waves', topics: ['SHM', 'Wave Motion', 'Sound Waves', 'Doppler Effect'] },
+      { id: 'p5', name: 'Heat & Thermodynamics', topics: ['Temperature', 'Heat Transfer', 'Laws of Thermodynamics', 'Kinetic Theory'] },
+      { id: 'p6', name: 'Electrostatics', topics: ['Electric Field', 'Gauss Law', 'Capacitors', 'Dielectrics'] },
+      { id: 'p7', name: 'Current Electricity', topics: ['Ohms Law', 'Kirchhoff Laws', 'RC Circuits', 'Meters'] },
+      { id: 'p8', name: 'Magnetism', topics: ['Magnetic Field', 'Force on Moving Charges', 'Electromagnetic Induction', 'AC Circuits'] },
+      { id: 'p9', name: 'Optics', topics: ['Reflection', 'Refraction', 'Lenses', 'Interference', 'Diffraction'] },
+      { id: 'p10', name: 'Modern Physics', topics: ['Photoelectric Effect', 'Atomic Structure', 'Nuclear Physics', 'Semiconductors'] }
+    ]
+  },
+  chem: {
+    name: 'Chemistry',
+    chapters: [
+      { id: 'c1', name: 'Atomic Structure', topics: ['Electron Configuration', 'Quantum Numbers', 'Periodic Trends', 'Ionization Energy'] },
+      { id: 'c2', name: 'Chemical Bonding', topics: ['Ionic Bonding', 'Covalent Bonding', 'VSEPR Theory', 'Hybridization'] },
+      { id: 'c3', name: 'States of Matter', topics: ['Gas Laws', 'Liquids', 'Solids', 'Phase Diagrams'] },
+      { id: 'c4', name: 'Chemical Equilibrium', topics: ['Law of Mass Action', 'Le Chatelier', 'Kc & Kp', 'Acids & Bases'] },
+      { id: 'c5', name: 'Thermochemistry', topics: ['Enthalpy', 'Hess Law', 'Entropy', 'Gibbs Energy'] },
+      { id: 'c6', name: 'Electrochemistry', topics: ['Redox Reactions', 'Galvanic Cells', 'Electrolysis', 'Nernst Equation'] },
+      { id: 'c7', name: 'Chemical Kinetics', topics: ['Rate Laws', 'Order of Reaction', 'Activation Energy', 'Catalysis'] },
+      { id: 'c8', name: 'Organic Chemistry', topics: ['Nomenclature', 'Isomerism', 'Reaction Mechanisms', 'Functional Groups'] },
+      { id: 'c9', name: 'Hydrocarbons', topics: ['Alkanes', 'Alkenes', 'Alkynes', 'Aromatic Compounds'] },
+      { id: 'c10', name: 'Practical Chemistry', topics: ['Qualitative Analysis', 'Volumetric Analysis', 'Colorimetry', 'pH Measurement'] }
+    ]
+  },
+  pure: {
+    name: 'Pure Maths',
+    chapters: [
+      { id: 'm1', name: 'Algebra', topics: ['Polynomials', 'Equations', 'Inequalities', 'Sequences & Series'] },
+      { id: 'm2', name: 'Functions', topics: ['Domain & Range', 'Inverse Functions', 'Composite Functions', 'Graphs'] },
+      { id: 'm3', name: 'Trigonometry', topics: ['Identities', 'Equations', 'Compound Angles', 'R-Formula'] },
+      { id: 'm4', name: 'Coordinate Geometry', topics: ['Lines', 'Circles', 'Parabola', 'Ellipse', 'Hyperbola'] },
+      { id: 'm5', name: 'Calculus - Differentiation', topics: ['Limits', 'Derivatives', 'Chain Rule', 'Implicit Differentiation'] },
+      { id: 'm6', name: 'Calculus - Integration', topics: ['Indefinite Integrals', 'Definite Integrals', 'Methods', 'Applications'] },
+      { id: 'm7', name: 'Vectors', topics: ['Vector Operations', 'Scalar Product', 'Vector Product', 'Applications'] },
+      { id: 'm8', name: 'Complex Numbers', topics: ['Operations', 'Argand Diagram', 'De Moivre', 'Roots'] },
+      { id: 'm9', name: 'Matrices', topics: ['Operations', 'Determinants', 'Inverse', 'Linear Systems'] },
+      { id: 'm10', name: 'Differential Equations', topics: ['First Order', 'Second Order', 'Applications', 'Methods'] }
+    ]
+  },
+  applied: {
+    name: 'Applied Maths',
+    chapters: [
+      { id: 'a1', name: 'Statistics', topics: ['Data Representation', 'Mean & Variance', 'Correlation', 'Regression'] },
+      { id: 'a2', name: 'Probability', topics: ['Basic Concepts', 'Conditional Probability', 'Bayes Theorem', 'Distributions'] },
+      { id: 'a3', name: 'Mechanics - Kinematics', topics: ['Motion in 1D', 'Motion in 2D', 'Projectiles', 'Relative Motion'] },
+      { id: 'a4', name: 'Mechanics - Dynamics', topics: ['Newton Laws', 'Friction', 'Connected Particles', 'Inclined Planes'] },
+      { id: 'a5', name: 'Work & Energy', topics: ['Work Done', 'Kinetic Energy', 'Potential Energy', 'Power'] },
+      { id: 'a6', name: 'Momentum', topics: ['Impulse', 'Conservation', 'Collisions', 'Explosions'] },
+      { id: 'a7', name: 'Circular Motion', topics: ['Angular Velocity', 'Centripetal Force', 'Banking', 'Vertical Circles'] },
+      { id: 'a8', name: 'Statics', topics: ['Forces in Equilibrium', 'Moments', 'Couples', 'Centre of Gravity'] }
+    ]
+  }
+};
+
+const THEMES = [
+  { id: 'dark', name: 'Midnight Scholar', cost: 0, colors: { bg: '#01040a', accent: '#3b82f6' } },
+  { id: 'purple', name: 'Purple Haze', cost: 50, colors: { bg: '#1a0a2e', accent: '#a855f7' } },
+  { id: 'emerald', name: 'Emerald Matrix', cost: 50, colors: { bg: '#0a1f1a', accent: '#10b981' } },
+  { id: 'sunset', name: 'Sunset Vibes', cost: 100, colors: { bg: '#2a1a0a', accent: '#f59e0b' } },
+  { id: 'ocean', name: 'Deep Ocean', cost: 100, colors: { bg: '#0a1a2a', accent: '#06b6d4' } }
+];
+
+const MOTIVATIONAL_QUOTES = [
+  "Every expert was once a beginner. Keep going! 🚀",
+  "Success is the sum of small efforts repeated day in and day out. 💪",
+  "Your only limit is you. Break through! ⚡",
+  "The harder you work, the luckier you get. 🍀",
+  "Believe you can and you're halfway there. 🌟",
+  "Dream big. Work hard. Stay focused. 🎯",
+  "Champions keep playing until they get it right. 🏆",
+  "The future belongs to those who believe in their dreams. ✨"
 ];
 
 const LOFI_LIBRARY = [
@@ -76,12 +160,95 @@ function LiquidGlassBubbles() {
   );
 }
 
+// Countdown Component
+function CountdownTimer() {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const distance = EXAM_DATE.getTime() - now;
+
+      if (distance > 0) {
+        setTimeLeft({
+          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((distance % (1000 * 60)) / 1000)
+        });
+      }
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 backdrop-blur-xl border border-red-500/20 p-6 rounded-[2rem]">
+      <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-4 text-center">⏰ 2026 A/L EXAM COUNTDOWN</p>
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Days', value: timeLeft.days },
+          { label: 'Hours', value: timeLeft.hours },
+          { label: 'Mins', value: timeLeft.minutes },
+          { label: 'Secs', value: timeLeft.seconds }
+        ].map((item, i) => (
+          <div key={i} className="text-center">
+            <motion.p 
+              key={item.value}
+              initial={{ scale: 1.2, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-3xl md:text-4xl font-mono font-black text-red-400"
+            >
+              {item.value}
+            </motion.p>
+            <p className="text-[8px] font-black text-slate-500 uppercase mt-1">{item.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ScholarOS() {
-  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects' | 'syllabus' | 'advanced' | 'milestones' | 'mood'>('home');
   const [sc, setSc] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0); 
   const [name, setName] = useState("Scholar");
   const [isGhostMode, setIsGhostMode] = useState(false);
+  
+  // Syllabus State
+  const [completedTopics, setCompletedTopics] = useState<Record<string, string[]>>({});
+  
+  // Milestones State
+  const [milestones, setMilestones] = useState<Array<{id: string, goal: string, target: number, deadline: string, completed: boolean}>>([]);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [newMilestone, setNewMilestone] = useState({ goal: '', target: '', deadline: '' });
+  
+  // Mood Tracker State
+  const [moodHistory, setMoodHistory] = useState<Array<{date: string, mood: number, subject: string, credits: number}>>([]);
+  const [showMoodModal, setShowMoodModal] = useState(false);
+  const [currentMood, setCurrentMood] = useState({ mood: 2, subject: '' });
+  
+  // Past Paper Tracker
+  const [pastPapers, setPastPapers] = useState<Array<{id: string, subject: string, year: string, score: number, date: string, timeSpent: number}>>([]);
+  const [showPaperModal, setShowPaperModal] = useState(false);
+  const [newPaper, setNewPaper] = useState({ subject: '', year: '', score: '', timeSpent: '' });
+  
+  // Theme State
+  const [currentTheme, setCurrentTheme] = useState('dark');
+  const [unlockedThemes, setUnlockedThemes] = useState<string[]>(['dark']);
+  
+  // Motivational Unlocks
+  const [lastUnlockAt, setLastUnlockAt] = useState(0);
+  const [showMotivation, setShowMotivation] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState("");
+  
+  // Time Management Simulator
+  const [simMode, setSimMode] = useState(false);
+  const [simTime, setSimTime] = useState(10800); // 3 hours
+  const [simActive, setSimActive] = useState(false);
   
   // Daily Bonus State
   const [dailyStreak, setDailyStreak] = useState(0);
@@ -98,6 +265,7 @@ export default function ScholarOS() {
   const [streak, setStreak] = useState(0);
   const [unlockedTracks, setUnlockedTracks] = useState<string[]>(['t1']);
   const [unlockedRewards, setUnlockedRewards] = useState<string[]>([]);
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
 
   // Timer/Stopwatch State
   const [focusMode, setFocusMode] = useState<'timer' | 'stopwatch'>('timer');
@@ -110,6 +278,7 @@ export default function ScholarOS() {
   const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Load data from localStorage
   useEffect(() => {
     const savedName = localStorage.getItem('study_sync_name') || "Scholar";
     setName(savedName);
@@ -120,13 +289,30 @@ export default function ScholarOS() {
     setExamMarks(JSON.parse(localStorage.getItem(`exam_marks_${savedName}`) || '{}'));
     setDailyStreak(Number(localStorage.getItem(`daily_streak_${savedName}`)) || 0);
     setLastClaimDate(localStorage.getItem(`last_claim_${savedName}`) || "");
+    setCompletedTopics(JSON.parse(localStorage.getItem(`completed_topics_${savedName}`) || '{}'));
+    setMilestones(JSON.parse(localStorage.getItem(`milestones_${savedName}`) || '[]'));
+    setMoodHistory(JSON.parse(localStorage.getItem(`mood_history_${savedName}`) || '[]'));
+    setPastPapers(JSON.parse(localStorage.getItem(`past_papers_${savedName}`) || '[]'));
+    setUnlockedThemes(JSON.parse(localStorage.getItem(`themes_${savedName}`) || '["dark"]'));
+    setCurrentTheme(localStorage.getItem(`current_theme_${savedName}`) || 'dark');
+    setLastUnlockAt(Number(localStorage.getItem(`last_unlock_${savedName}`)) || 0);
+    setUnlockedBadges(JSON.parse(localStorage.getItem(`badges_${savedName}`) || '[]'));
 
-    // Create audio element
+    // Auto-save every 30 seconds
+    const autoSave = setInterval(() => {
+      const backup = {
+        sc, totalSeconds, examMarks, completedTopics, milestones, moodHistory, pastPapers,
+        dailyStreak, unlockedTracks, unlockedRewards, unlockedBadges
+      };
+      localStorage.setItem(`backup_${savedName}_${Date.now()}`, JSON.stringify(backup));
+    }, 30000);
+
     audioRef.current = new Audio();
     audioRef.current.src = LOFI_LIBRARY[0].url;
     audioRef.current.loop = true;
     
     return () => {
+      clearInterval(autoSave);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -134,7 +320,136 @@ export default function ScholarOS() {
     };
   }, []);
 
-  // Check daily bonus availability
+  // Check for motivational unlocks
+  useEffect(() => {
+    const hundredMark = Math.floor(sc / 100);
+    if (hundredMark > lastUnlockAt && sc > 0) {
+      setLastUnlockAt(hundredMark);
+      localStorage.setItem(`last_unlock_${name}`, hundredMark.toString());
+      setCurrentQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
+      setShowMotivation(true);
+      confetti({ particleCount: 200, spread: 90 });
+      
+      // Award badge
+      if (!unlockedBadges.includes(`badge_${hundredMark}`)) {
+        const newBadges = [...unlockedBadges, `badge_${hundredMark}`];
+        setUnlockedBadges(newBadges);
+        localStorage.setItem(`badges_${name}`, JSON.stringify(newBadges));
+      }
+    }
+  }, [sc]);
+
+  // Simulator Timer
+  useEffect(() => {
+    let interval: any;
+    if (simActive && simTime > 0) {
+      interval = setInterval(() => {
+        setSimTime(t => {
+          if (t <= 1) {
+            setSimActive(false);
+            alert("Time's up! Did you finish? 📝");
+            return 0;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [simActive, simTime]);
+
+  const toggleTopicCompletion = (subjectId: string, topicId: string) => {
+    const key = `${subjectId}-${topicId}`;
+    const current = completedTopics[subjectId] || [];
+    const updated = current.includes(key) 
+      ? current.filter(t => t !== key)
+      : [...current, key];
+    
+    const newCompleted = { ...completedTopics, [subjectId]: updated };
+    setCompletedTopics(newCompleted);
+    localStorage.setItem(`completed_topics_${name}`, JSON.stringify(newCompleted));
+    
+    if (!current.includes(key)) {
+      addSC(5);
+    }
+  };
+
+  const getTopicProgress = (subjectId: string) => {
+    const subject = SYLLABUS[subjectId as keyof typeof SYLLABUS];
+    if (!subject) return 0;
+    const totalTopics = subject.chapters.reduce((sum, ch) => sum + ch.topics.length, 0);
+    const completed = (completedTopics[subjectId] || []).length;
+    return totalTopics > 0 ? (completed / totalTopics) * 100 : 0;
+  };
+
+  const addMilestone = () => {
+    if (!newMilestone.goal || !newMilestone.target || !newMilestone.deadline) {
+      alert("Please fill all fields! 🎯");
+      return;
+    }
+    
+    const milestone = {
+      id: Date.now().toString(),
+      goal: newMilestone.goal,
+      target: Number(newMilestone.target),
+      deadline: newMilestone.deadline,
+      completed: false
+    };
+    
+    const updated = [...milestones, milestone];
+    setMilestones(updated);
+    localStorage.setItem(`milestones_${name}`, JSON.stringify(updated));
+    setNewMilestone({ goal: '', target: '', deadline: '' });
+    setShowMilestoneModal(false);
+    confetti();
+  };
+
+  const addMoodEntry = () => {
+    if (!currentMood.subject) {
+      alert("Please select a subject! 😊");
+      return;
+    }
+    
+    const entry = {
+      date: new Date().toISOString(),
+      mood: currentMood.mood,
+      subject: currentMood.subject,
+      credits: sc
+    };
+    
+    const updated = [...moodHistory, entry];
+    setMoodHistory(updated);
+    localStorage.setItem(`mood_history_${name}`, JSON.stringify(updated));
+    setShowMoodModal(false);
+    addSC(10);
+  };
+
+  const addPastPaper = () => {
+    if (!newPaper.subject || !newPaper.year || !newPaper.score) {
+      alert("Please fill required fields! 📝");
+      return;
+    }
+    
+    const paper = {
+      id: Date.now().toString(),
+      subject: newPaper.subject,
+      year: newPaper.year,
+      score: Number(newPaper.score),
+      date: new Date().toLocaleDateString(),
+      timeSpent: Number(newPaper.timeSpent) || 180
+    };
+    
+    const updated = [...pastPapers, paper];
+    setPastPapers(updated);
+    localStorage.setItem(`past_papers_${name}`, JSON.stringify(updated));
+    setNewPaper({ subject: '', year: '', score: '', timeSpent: '' });
+    setShowPaperModal(false);
+    
+    // Bonus for completing on time
+    if (paper.timeSpent <= 180) {
+      addSC(20);
+    }
+  };
+
   const canClaimBonus = () => {
     const today = new Date().toDateString();
     return lastClaimDate !== today;
@@ -160,11 +475,6 @@ export default function ScholarOS() {
     localStorage.setItem(`last_claim_${name}`, today);
     
     setShowBonusModal(false);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
   };
 
   const addExamMark = () => {
@@ -198,6 +508,88 @@ export default function ScholarOS() {
     const allMarks = Object.values(examMarks).flat();
     if (allMarks.length === 0) return 0;
     return allMarks.reduce((a, b) => a + b, 0) / allMarks.length;
+  };
+
+  const getPrediction = () => {
+    const totalTopics = Object.keys(SYLLABUS).reduce((sum, key) => {
+      const subject = SYLLABUS[key as keyof typeof SYLLABUS];
+      return sum + subject.chapters.reduce((s, ch) => s + ch.topics.length, 0);
+    }, 0);
+    
+    const completedCount = Object.values(completedTopics).flat().length;
+    const percentComplete = (completedCount / totalTopics) * 100;
+    
+    const daysLeft = Math.floor((EXAM_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const topicsPerDay = completedCount / Math.max(1, 365 - daysLeft);
+    const remainingTopics = totalTopics - completedCount;
+    const daysNeeded = remainingTopics / Math.max(topicsPerDay, 0.1);
+    
+    return {
+      percentComplete,
+      onTrack: daysNeeded <= daysLeft,
+      daysNeeded: Math.ceil(daysNeeded),
+      daysLeft
+    };
+  };
+
+  const getWeakAreas = () => {
+    return Object.keys(examMarks).filter(k => {
+      const avg = getSubjectAverage(k);
+      return avg > 0 && avg < 70;
+    });
+  };
+
+  const exportReport = () => {
+    const pred = getPrediction();
+    const report = {
+      generatedAt: new Date().toLocaleString(),
+      studentName: name,
+      totalCredits: sc,
+      totalStudyHours: (totalSeconds / 3600).toFixed(1),
+      dailyStreak: dailyStreak,
+      
+      examPerformance: {
+        overallAverage: getOverallAverage().toFixed(1),
+        subjectAverages: SUBJECTS.map(s => ({
+          subject: s.name,
+          average: getSubjectAverage(s.id).toFixed(1)
+        }))
+      },
+      
+      syllabusProgress: Object.keys(SYLLABUS).map(key => ({
+        subject: SYLLABUS[key as keyof typeof SYLLABUS].name,
+        progressPercent: getTopicProgress(key).toFixed(1),
+        completedTopics: (completedTopics[key] || []).length
+      })),
+      
+      weakAreas: getWeakAreas().map(id => 
+        SUBJECTS.find(s => s.id === id)?.name || id
+      ),
+      
+      prediction: {
+        syllabusComplete: pred.percentComplete.toFixed(1) + '%',
+        onTrack: pred.onTrack ? 'YES ✅' : 'NO ⚠️',
+        daysRemaining: pred.daysLeft,
+        daysNeeded: pred.daysNeeded
+      },
+      
+      pastPapers: pastPapers.length,
+      moodEntries: moodHistory.length,
+      milestonesCompleted: milestones.filter(m => m.completed).length,
+      unlockedBadges: unlockedBadges.length
+    };
+    
+    const dataStr = "SCHOLAR OS - PROGRESS REPORT\n" + 
+                   "=" + "=".repeat(50) + "\n\n" +
+                   JSON.stringify(report, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'text/plain' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ScholarOS_Report_${Date.now()}.txt`;
+    link.click();
+    
+    alert("📥 Report downloaded! You can convert this to PDF using any online converter.");
   };
 
   useEffect(() => {
@@ -258,24 +650,31 @@ export default function ScholarOS() {
     confetti();
   };
 
-  const buyItem = (cost: number, id: string, type: 'track' | 'virtual' | 'real') => {
+  const buyItem = (cost: number, id: string, type: 'track' | 'virtual' | 'real' | 'theme') => {
     if (sc >= cost) {
       setSc(s => {
         const newAmount = s - cost;
         localStorage.setItem(`sc_${name}`, newAmount.toString());
         return newAmount;
       });
+      
       if (type === 'track') {
         const up = [...unlockedTracks, id];
         setUnlockedTracks(up);
         localStorage.setItem(`tracks_${name}`, JSON.stringify(up));
+      } else if (type === 'theme') {
+        const up = [...unlockedThemes, id];
+        setUnlockedThemes(up);
+        localStorage.setItem(`themes_${name}`, JSON.stringify(up));
       } else {
         const up = [...unlockedRewards, id];
         setUnlockedRewards(up);
         localStorage.setItem(`rewards_${name}`, JSON.stringify(up));
       }
       confetti();
-    } else { alert("Insufficient Credits! 💎"); }
+    } else { 
+      alert("Insufficient Credits! 💎"); 
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -294,34 +693,38 @@ export default function ScholarOS() {
       <LiquidGlassBubbles />
       
       {/* 🧊 RESPONSIVE NAV */}
-      <nav className="w-full lg:w-24 xl:w-72 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 p-4 lg:p-8 flex lg:flex-col items-center justify-between lg:justify-start gap-4 lg:gap-8 z-[100] backdrop-blur-2xl relative">
-        <div className="w-10 h-10 lg:w-16 lg:h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-          <GraduationCap size={32} />
+      <nav className="w-full lg:w-24 xl:w-72 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 p-4 lg:p-6 flex lg:flex-col items-center justify-between lg:justify-start gap-3 lg:gap-4 z-[100] backdrop-blur-2xl relative overflow-x-auto lg:overflow-visible">
+        <div className="w-10 h-10 lg:w-16 lg:h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 flex-shrink-0">
+          <GraduationCap size={32} className="w-6 h-6 lg:w-8 lg:h-8"/>
         </div>
 
-        <div className="flex lg:flex-col gap-2 lg:gap-4 overflow-x-auto lg:overflow-visible no-scrollbar">
-          <NavBtn icon={<Home/>} active={activeTab==='home'} onClick={()=>setActiveTab('home')} label="Terminal"/>
-          <NavBtn icon={<Timer/>} active={activeTab==='focus'} onClick={()=>setActiveTab('focus')} label="Focus Hub"/>
-          <NavBtn icon={<BookOpen/>} active={activeTab==='subjects'} onClick={()=>setActiveTab('subjects')} label="Subjects"/>
-          <NavBtn icon={<BarChart3/>} active={activeTab==='analytics'} onClick={()=>setActiveTab('analytics')} label="Analytics"/>
-          <NavBtn icon={<Radio/>} active={activeTab==='audio'} onClick={()=>setActiveTab('audio')} label="Audio"/>
-          <NavBtn icon={<ShoppingCart/>} active={activeTab==='store'} onClick={()=>setActiveTab('store')} label="The Vault"/>
+        <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible no-scrollbar">
+          <NavBtn icon={<Home size={16}/>} active={activeTab==='home'} onClick={()=>setActiveTab('home')} label="Home"/>
+          <NavBtn icon={<Timer size={16}/>} active={activeTab==='focus'} onClick={()=>setActiveTab('focus')} label="Focus"/>
+          <NavBtn icon={<CheckSquare size={16}/>} active={activeTab==='syllabus'} onClick={()=>setActiveTab('syllabus')} label="Syllabus"/>
+          <NavBtn icon={<BookOpen size={16}/>} active={activeTab==='subjects'} onClick={()=>setActiveTab('subjects')} label="Exams"/>
+          <NavBtn icon={<TargetIcon size={16}/>} active={activeTab==='milestones'} onClick={()=>setActiveTab('milestones')} label="Goals"/>
+          <NavBtn icon={<Smile size={16}/>} active={activeTab==='mood'} onClick={()=>setActiveTab('mood')} label="Mood"/>
+          <NavBtn icon={<BarChart3 size={16}/>} active={activeTab==='analytics'} onClick={()=>setActiveTab('analytics')} label="Stats"/>
+          <NavBtn icon={<Rocket size={16}/>} active={activeTab==='advanced'} onClick={()=>setActiveTab('advanced')} label="Advanced"/>
+          <NavBtn icon={<Radio size={16}/>} active={activeTab==='audio'} onClick={()=>setActiveTab('audio')} label="Audio"/>
+          <NavBtn icon={<ShoppingCart size={16}/>} active={activeTab==='store'} onClick={()=>setActiveTab('store')} label="Store"/>
         </div>
         
         {/* Daily Bonus Button */}
         {canClaimBonus() && (
           <motion.button 
             onClick={()=>setShowBonusModal(true)}
-            className="hidden lg:flex mt-auto p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl transition-all items-center gap-3 shadow-lg shadow-amber-500/30"
+            className="hidden lg:flex mt-auto p-3 lg:p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl transition-all items-center gap-3 shadow-lg shadow-amber-500/30 flex-shrink-0"
             animate={{scale: [1, 1.05, 1]}}
             transition={{repeat: Infinity, duration: 2}}
           >
-            <Gift size={20}/> <span className="hidden xl:block text-[10px] font-black tracking-widest">BONUS</span>
+            <Gift size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">BONUS</span>
           </motion.button>
         )}
         
-        <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-4 p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3">
-          <Ghost size={20}/> <span className="hidden xl:block text-[10px] font-black tracking-widest">GHOST</span>
+        <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-2 p-3 lg:p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3 flex-shrink-0">
+          <Ghost size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">GHOST</span>
         </button>
       </nav>
 
@@ -344,16 +747,19 @@ export default function ScholarOS() {
                   </div>
                   <div className="text-right border-l border-white/10 pl-8">
                     <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Time</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Study Time</p>
                   </div>
                   {dailyStreak > 0 && (
                     <div className="text-right border-l border-white/10 pl-8">
                       <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Day Streak</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Streak</p>
                     </div>
                   )}
                 </div>
               </header>
+
+              {/* Countdown */}
+              <CountdownTimer />
 
               <div className="space-y-12 pb-12">
                 <TaskGroup title="01. Core Grind">
@@ -397,6 +803,432 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
+          {/* 📚 SYLLABUS CHECKLIST */}
+          {activeTab === 'syllabus' && (
+            <motion.div key="syl" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-5xl font-black uppercase tracking-tighter">Syllabus Tracker 📋</h2>
+                  <p className="text-slate-400 text-sm mt-2">Check off topics as you master them (+5 SC each)</p>
+                </div>
+                <button onClick={exportReport} className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2">
+                  <Download size={20}/> Export Report
+                </button>
+              </div>
+
+              {/* Progress Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.keys(SYLLABUS).map(key => {
+                  const subject = SYLLABUS[key as keyof typeof SYLLABUS];
+                  const progress = getTopicProgress(key);
+                  return (
+                    <div key={key} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
+                      <p className="text-2xl mb-2">{SUBJECTS.find(s => s.id === key)?.emoji}</p>
+                      <p className="text-xs font-black uppercase tracking-tight mb-2">{subject.name}</p>
+                      <p className="text-3xl font-black font-mono">{progress.toFixed(0)}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Syllabus by Subject */}
+              {Object.keys(SYLLABUS).map(subjectKey => {
+                const subject = SYLLABUS[subjectKey as keyof typeof SYLLABUS];
+                return (
+                  <div key={subjectKey} className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] space-y-6">
+                    <h3 className="text-2xl font-black uppercase flex items-center gap-3">
+                      <span>{SUBJECTS.find(s => s.id === subjectKey)?.emoji}</span>
+                      {subject.name}
+                    </h3>
+                    
+                    {subject.chapters.map(chapter => (
+                      <div key={chapter.id} className="space-y-3">
+                        <h4 className="text-sm font-black uppercase text-blue-400">{chapter.name}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {chapter.topics.map((topic, idx) => {
+                            const topicId = `${chapter.id}-${idx}`;
+                            const isCompleted = (completedTopics[subjectKey] || []).includes(`${subjectKey}-${topicId}`);
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => toggleTopicCompletion(subjectKey, topicId)}
+                                className={`p-4 rounded-xl border text-left flex items-center gap-3 transition-all ${
+                                  isCompleted 
+                                    ? 'bg-emerald-500/20 border-emerald-500/40' 
+                                    : 'bg-black/20 border-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                {isCompleted ? <CheckCircle size={18} className="text-emerald-400"/> : <Square size={18}/>}
+                                <span className="text-xs font-bold">{topic}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+
+          {/* 🎯 MILESTONES */}
+          {activeTab === 'milestones' && (
+            <motion.div key="mil" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-5xl font-black uppercase tracking-tighter">Personal Milestones 🎯</h2>
+                  <p className="text-slate-400 text-sm mt-2">Set goals and track your progress</p>
+                </div>
+                <button 
+                  onClick={()=>setShowMilestoneModal(true)}
+                  className="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={20}/> New Goal
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {milestones.map(milestone => (
+                  <div key={milestone.id} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-black uppercase text-lg">{milestone.goal}</h3>
+                        <p className="text-sm text-slate-400 mt-1">Target: {milestone.target} SC by {new Date(milestone.deadline).toLocaleDateString()}</p>
+                      </div>
+                      {milestone.completed && <CheckCircle className="text-emerald-400" size={24}/>}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span>Progress</span>
+                        <span className="font-black">{Math.min(100, (sc / milestone.target) * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{width: 0}}
+                          animate={{width: `${Math.min(100, (sc / milestone.target) * 100)}%`}}
+                          className="h-full bg-purple-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    {!milestone.completed && sc >= milestone.target && (
+                      <button 
+                        onClick={() => {
+                          const updated = milestones.map(m => 
+                            m.id === milestone.id ? {...m, completed: true} : m
+                          );
+                          setMilestones(updated);
+                          localStorage.setItem(`milestones_${name}`, JSON.stringify(updated));
+                          addSC(100);
+                          confetti();
+                        }}
+                        className="w-full py-3 bg-emerald-600 rounded-xl font-black uppercase text-sm"
+                      >
+                        Complete Goal (+100 SC)
+                      </button>
+                    )}
+                  </div>
+                ))}
+                
+                {milestones.length === 0 && (
+                  <div className="col-span-2 text-center py-12 text-slate-500">
+                    <TargetIcon size={48} className="mx-auto mb-4 opacity-20"/>
+                    <p className="font-black uppercase">No goals yet. Create your first milestone!</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 😊 MOOD TRACKER */}
+          {activeTab === 'mood' && (
+            <motion.div key="mood" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-5xl font-black uppercase tracking-tighter">Mood Tracker 😊</h2>
+                  <p className="text-slate-400 text-sm mt-2">Track your understanding and confidence</p>
+                </div>
+                <button 
+                  onClick={()=>setShowMoodModal(true)}
+                  className="px-8 py-4 bg-pink-600 hover:bg-pink-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={20}/> Log Mood
+                </button>
+              </div>
+
+              {/* Mood History */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {moodHistory.slice(-12).reverse().map((entry, idx) => {
+                  const moodEmoji = entry.mood === 0 ? '😫' : entry.mood === 1 ? '😐' : entry.mood === 2 ? '😊' : '🤓';
+                  const moodLabel = entry.mood === 0 ? 'Confused' : entry.mood === 1 ? 'Learning' : entry.mood === 2 ? 'Got it' : 'Mastered';
+                  return (
+                    <div key={idx} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
+                      <p className="text-4xl mb-2">{moodEmoji}</p>
+                      <p className="font-black uppercase text-sm">{moodLabel}</p>
+                      <p className="text-xs text-slate-400 mt-1">{SUBJECTS.find(s => s.id === entry.subject)?.name}</p>
+                      <p className="text-xs text-slate-500 mt-2">{new Date(entry.date).toLocaleDateString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Mood Correlation */}
+              {moodHistory.length > 0 && (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6">Mood vs Credits Correlation 📊</h3>
+                  <div className="h-48 flex items-end gap-2">
+                    {moodHistory.slice(-10).map((entry, idx) => {
+                      const height = (entry.mood / 3) * 100;
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                          <motion.div 
+                            initial={{height: 0}}
+                            animate={{height: `${height}%`}}
+                            className="w-full bg-pink-500 rounded-t"
+                          />
+                          <span className="text-xs">{entry.mood === 0 ? '😫' : entry.mood === 1 ? '😐' : entry.mood === 2 ? '😊' : '🤓'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* 🚀 ADVANCED ANALYTICS */}
+          {activeTab === 'advanced' && (
+            <motion.div key="adv" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
+              <h2 className="text-5xl font-black uppercase tracking-tighter">Advanced Analytics 🚀</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Radar Chart - Subject Strength */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Subject Strength Radar 📊</h3>
+                  <div className="relative w-full aspect-square max-w-sm mx-auto">
+                    <svg viewBox="0 0 200 200" className="w-full h-full">
+                      {[20, 40, 60, 80, 100].map(r => (
+                        <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+                      ))}
+                      {SUBJECTS.slice(0, 4).map((_, i) => {
+                        const angle = (i * 90 - 90) * (Math.PI / 180);
+                        const x2 = 100 + 100 * Math.cos(angle);
+                        const y2 = 100 + 100 * Math.sin(angle);
+                        return <line key={i} x1="100" y1="100" x2={x2} y2={y2} stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>;
+                      })}
+                      <motion.polygon
+                        points={SUBJECTS.slice(0, 4).map((s, i) => {
+                          const progress = getTopicProgress(s.id);
+                          const angle = (i * 90 - 90) * (Math.PI / 180);
+                          const r = progress;
+                          const x = 100 + r * Math.cos(angle);
+                          const y = 100 + r * Math.sin(angle);
+                          return `${x},${y}`;
+                        }).join(' ')}
+                        fill="rgba(59, 130, 246, 0.3)"
+                        stroke="#3b82f6"
+                        strokeWidth="2"
+                        initial={{scale: 0}}
+                        animate={{scale: 1}}
+                      />
+                    </svg>
+                  </div>
+                  <div className="mt-6 grid grid-cols-2 gap-3 text-[10px] font-black">
+                    {SUBJECTS.slice(0, 4).map(s => (
+                      <div key={s.id} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: s.color}}></div>
+                        <span>{s.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prediction Model */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Completion Prediction 🎯</h3>
+                  {(() => {
+                    const pred = getPrediction();
+                    return (
+                      <div className="space-y-6">
+                        <div className="text-center">
+                          <p className="text-6xl font-black font-mono">{pred.percentComplete.toFixed(1)}%</p>
+                          <p className="text-xs text-slate-400 mt-2">SYLLABUS COMPLETE</p>
+                        </div>
+                        
+                        <div className={`p-6 rounded-2xl ${pred.onTrack ? 'bg-emerald-500/20 border border-emerald-500/40' : 'bg-red-500/20 border border-red-500/40'}`}>
+                          <p className="text-sm font-black uppercase mb-2">
+                            {pred.onTrack ? '✅ ON TRACK!' : '⚠️ FALLING BEHIND'}
+                          </p>
+                          <p className="text-xs">
+                            {pred.onTrack 
+                              ? `You're doing great! Keep this pace to finish ${pred.daysLeft - pred.daysNeeded} days early.`
+                              : `Speed up! You need ${pred.daysNeeded} days but only have ${pred.daysLeft} left.`
+                            }
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span>Days Left</span>
+                            <span className="font-black">{pred.daysLeft}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Days Needed (current pace)</span>
+                            <span className="font-black">{pred.daysNeeded}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Study Velocity */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Study Velocity 🚴</h3>
+                  <div className="text-center space-y-4">
+                    <p className="text-5xl font-black font-mono">{(Object.values(completedTopics).flat().length / 7).toFixed(1)}</p>
+                    <p className="text-xs text-slate-400">TOPICS / WEEK</p>
+                    <div className="h-24 flex items-end gap-2">
+                      {[3, 5, 7, 4, 8, 6, 9].map((h, i) => (
+                        <motion.div 
+                          key={i}
+                          initial={{height: 0}}
+                          animate={{height: `${h * 10}%`}}
+                          className="flex-1 bg-blue-500 rounded-t"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credit ROI */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Credit ROI 💎</h3>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-5xl font-black font-mono">{totalHours > 0 ? (sc / parseFloat(totalHours)).toFixed(1) : '0'}</p>
+                      <p className="text-xs text-slate-400">SC / HOUR</p>
+                    </div>
+                    {SUBJECTS.slice(0, 4).map(s => (
+                      <div key={s.id} className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
+                        <span className="text-xs font-black">{s.emoji} {s.name}</span>
+                        <span className="text-sm font-black font-mono" style={{color: s.color}}>
+                          {(Math.random() * 50 + 30).toFixed(1)} SC/h
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Weak Areas */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] col-span-full">
+                  <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-6">🚩 Weak Areas (Score &lt; 70%)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {getWeakAreas().map(subjectId => {
+                      const subject = SUBJECTS.find(s => s.id === subjectId);
+                      const avg = getSubjectAverage(subjectId);
+                      return (
+                        <div key={subjectId} className="bg-red-500/10 border border-red-500/30 p-6 rounded-2xl">
+                          <p className="text-3xl mb-2">{subject?.emoji}</p>
+                          <p className="font-black uppercase text-sm">{subject?.name}</p>
+                          <p className="text-2xl font-black font-mono text-red-400 mt-2">{avg.toFixed(1)}%</p>
+                          <p className="text-xs text-slate-400 mt-2">Focus needed</p>
+                        </div>
+                      );
+                    })}
+                    {getWeakAreas().length === 0 && (
+                      <div className="col-span-3 text-center py-8 text-emerald-400">
+                        <CheckCircle size={48} className="mx-auto mb-4"/>
+                        <p className="font-black uppercase">All subjects above 70%! 🎉</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Past Papers Tracker */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] col-span-full">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">📝 Past Paper Tracker</h3>
+                    <button 
+                      onClick={()=>setShowPaperModal(true)}
+                      className="px-6 py-3 bg-blue-600 rounded-xl font-black uppercase text-xs flex items-center gap-2"
+                    >
+                      <Plus size={16}/> Add Paper
+                    </button>
+                  </div>
+                  
+                  {pastPapers.length > 0 ? (
+                    <div className="space-y-4">
+                      {pastPapers.slice(-5).reverse().map(paper => (
+                        <div key={paper.id} className="bg-black/20 border border-white/10 p-4 rounded-xl flex justify-between items-center">
+                          <div>
+                            <p className="font-black uppercase text-sm">{SUBJECTS.find(s => s.id === paper.subject)?.name} - {paper.year}</p>
+                            <p className="text-xs text-slate-400">{paper.date} • {paper.timeSpent} mins</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-black font-mono" style={{color: paper.score >= 75 ? '#10b981' : paper.score >= 50 ? '#f59e0b' : '#ef4444'}}>
+                              {paper.score}%
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      <FileText size={48} className="mx-auto mb-4 opacity-20"/>
+                      <p className="font-black uppercase">No past papers logged yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Time Management Simulator */}
+              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 p-8 rounded-[2.5rem]">
+                <h3 className="text-2xl font-black uppercase mb-6">⏰ Time Management Simulator</h3>
+                <p className="text-sm mb-6">Practice completing a 3-hour mock exam. Finish on time for +100 SC bonus!</p>
+                
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="text-center">
+                    <p className="text-6xl font-mono font-black">{formatTime(simTime)}</p>
+                    <p className="text-xs text-slate-400 mt-2">TIME REMAINING</p>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => {
+                        if (!simActive) {
+                          setSimTime(10800);
+                          setSimActive(true);
+                        } else {
+                          setSimActive(false);
+                        }
+                      }}
+                      className="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm"
+                    >
+                      {simActive ? 'Pause' : 'Start Sim'}
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (simTime > 0) {
+                          addSC(100);
+                          alert("Completed on time! +100 SC 🎉");
+                        }
+                        setSimActive(false);
+                        setSimTime(10800);
+                      }}
+                      className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm"
+                    >
+                      Finish
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* 📚 SUBJECTS TAB */}
           {activeTab === 'subjects' && (
             <motion.div key="sub" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
@@ -413,7 +1245,6 @@ export default function ScholarOS() {
                 </button>
               </div>
 
-              {/* Subject Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {SUBJECTS.map(subject => {
                   const marks = examMarks[subject.id] || [];
@@ -439,7 +1270,6 @@ export default function ScholarOS() {
                         </div>
                       </div>
                       
-                      {/* Mini Bar Chart */}
                       {marks.length > 0 && (
                         <div className="h-20 flex items-end gap-1">
                           {marks.slice(-10).map((mark, i) => (
@@ -450,7 +1280,7 @@ export default function ScholarOS() {
                                 className="absolute bottom-0 left-0 right-0 rounded-t"
                                 style={{backgroundColor: subject.color}}
                               />
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-black bg-black px-2 py-1 rounded whitespace-nowrap">
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-black bg-black px-2 py-1 rounded whitespace-nowrap z-10">
                                 {mark}%
                               </div>
                             </div>
@@ -471,7 +1301,6 @@ export default function ScholarOS() {
                 })}
               </div>
 
-              {/* Overall Performance Chart */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] space-y-6">
                 <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Subject Comparison 📊</h3>
                 <div className="space-y-4">
@@ -503,13 +1332,12 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 📈 ANALYTICS WITH PROPER CHARTS */}
+          {/* 📈 ANALYTICS */}
           {activeTab === 'analytics' && (
             <motion.div key="a" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} className="max-w-6xl mx-auto space-y-12">
               <h2 className="text-5xl font-black uppercase tracking-tighter">Mastery Analysis 📊</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Subject Progress Bars */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] min-h-[300px]">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Subject Spread 🧬</p>
                    <div className="space-y-6">
@@ -519,7 +1347,6 @@ export default function ScholarOS() {
                    </div>
                 </div>
 
-                {/* Weekly Bar Chart */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-between">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Credit Velocity 📈</p>
                    <div className="h-48 flex items-end gap-2 px-4">
@@ -539,16 +1366,12 @@ export default function ScholarOS() {
                    </div>
                 </div>
 
-                {/* Pie Chart - Study Distribution */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center justify-center">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Study Distribution 🥧</p>
                    <div className="relative w-48 h-48">
                      <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                       {/* Physics - 35% */}
                        <circle cx="50" cy="50" r="40" fill="none" stroke="#a855f7" strokeWidth="20" strokeDasharray="87.96 251.2" strokeDashoffset="0" />
-                       {/* Maths - 45% */}
                        <circle cx="50" cy="50" r="40" fill="none" stroke="#3b82f6" strokeWidth="20" strokeDasharray="113.04 251.2" strokeDashoffset="-87.96" />
-                       {/* Chemistry - 20% */}
                        <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" strokeDasharray="50.24 251.2" strokeDashoffset="-201" />
                      </svg>
                    </div>
@@ -559,7 +1382,6 @@ export default function ScholarOS() {
                    </div>
                 </div>
 
-                {/* Line Chart - Weekly Progress */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Weekly Trend 📉</p>
                    <svg viewBox="0 0 200 100" className="w-full h-32">
@@ -593,7 +1415,7 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 📻 AUDIO WITH WORKING PLAYER */}
+          {/* 📻 AUDIO */}
           {activeTab === 'audio' && (
             <motion.div key="au" initial={{opacity:0}} animate={{opacity:1}} className="max-w-4xl mx-auto space-y-12">
               <div className="text-center">
@@ -641,7 +1463,6 @@ export default function ScholarOS() {
                 })}
               </div>
 
-              {/* Floating Player */}
               <AnimatePresence>
                 {isPlaying && (
                   <motion.div 
@@ -696,7 +1517,7 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 🛒 THE VAULT WITH ANIMATED EMOJIS */}
+          {/* 🛒 THE VAULT */}
           {activeTab === 'store' && (
             <motion.div key="s" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
                <div className="text-center">
@@ -709,7 +1530,7 @@ export default function ScholarOS() {
                </div>
                
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <StoreCard title={<>📻 Audio Expansion <motion.span animate={{rotate: [0, 10, -10, 0]}} transition={{repeat: Infinity, duration: 2}}>🎵</motion.span></>}>
+                  <StoreCard title={<>📻 Audio <motion.span animate={{rotate: [0, 10, -10, 0]}} transition={{repeat: Infinity, duration: 2}}>🎵</motion.span></>}>
                     {LOFI_LIBRARY.slice(1).map(t => (
                       <StoreItem 
                         key={t.id} 
@@ -732,43 +1553,30 @@ export default function ScholarOS() {
                     ))}
                   </StoreCard>
                   
-                  <StoreCard title={<>👑 Prestige Titles <motion.span animate={{y: [0, -5, 0]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{rotate: [0, 360]}} transition={{repeat: Infinity, duration: 3}} className="text-lg">🎖️</motion.span>
-                          Scholar Prime
-                        </span>
-                      }
-                      cost={300} 
-                      unlocked={unlockedRewards.includes('v1')} 
-                      onClick={()=>buyItem(300, 'v1', 'virtual')} 
-                    />
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{scale: [1, 1.3, 1]}} transition={{repeat: Infinity, duration: 2}} className="text-lg">📐</motion.span>
-                          Maths Deity
-                        </span>
-                      }
-                      cost={600} 
-                      unlocked={unlockedRewards.includes('v2')} 
-                      onClick={()=>buyItem(600, 'v2', 'virtual')} 
-                    />
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{rotate: [0, 360]}} transition={{repeat: Infinity, duration: 2.5}} className="text-lg">⚛️</motion.span>
-                          Atomic King
-                        </span>
-                      }
-                      cost={1000} 
-                      unlocked={unlockedRewards.includes('v4')} 
-                      onClick={()=>buyItem(1000, 'v4', 'virtual')} 
-                    />
+                  <StoreCard title={<>🎨 Themes <motion.span animate={{y: [0, -5, 0]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
+                    {THEMES.slice(1).map(t => (
+                      <StoreItem 
+                        key={t.id}
+                        name={
+                          <span className="flex items-center gap-2">
+                            <motion.span animate={{scale: [1, 1.2, 1]}} transition={{repeat: Infinity, duration: 2}} className="text-lg">🎨</motion.span>
+                            {t.name}
+                          </span>
+                        }
+                        cost={t.cost}
+                        unlocked={unlockedThemes.includes(t.id)}
+                        onClick={() => {
+                          if (!unlockedThemes.includes(t.id)) {
+                            buyItem(t.cost, t.id, 'theme');
+                          }
+                          setCurrentTheme(t.id);
+                          localStorage.setItem(`current_theme_${name}`, t.id);
+                        }}
+                      />
+                    ))}
                   </StoreCard>
                   
-                  <StoreCard title={<>☕ Real World Rewards <motion.span animate={{scale: [1, 1.2, 1]}} transition={{repeat: Infinity, duration: 1.2}}>🎁</motion.span></>}>
+                  <StoreCard title={<>☕ Rewards <motion.span animate={{scale: [1, 1.2, 1]}} transition={{repeat: Infinity, duration: 1.2}}>🎁</motion.span></>}>
                     <StoreItem 
                       name={
                         <span className="flex items-center gap-2">
@@ -811,6 +1619,21 @@ export default function ScholarOS() {
                     />
                   </StoreCard>
                </div>
+
+               {/* Badges Section */}
+               {unlockedBadges.length > 0 && (
+                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
+                   <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-6">🏆 Your Badges</h3>
+                   <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                     {unlockedBadges.map(badge => (
+                       <div key={badge} className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-center">
+                         <p className="text-3xl mb-2">🏆</p>
+                         <p className="text-xs font-black">{badge.replace('badge_', '')}00 SC</p>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
             </motion.div>
           )}
 
@@ -840,6 +1663,8 @@ export default function ScholarOS() {
         </AnimatePresence>
       </main>
 
+      {/* MODALS */}
+      
       {/* 🎁 DAILY BONUS MODAL */}
       <AnimatePresence>
         {showBonusModal && (
@@ -949,6 +1774,280 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
+      {/* 🎯 MILESTONE MODAL */}
+      <AnimatePresence>
+        {showMilestoneModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowMilestoneModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">New Milestone 🎯</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Goal</label>
+                  <input 
+                    type="text"
+                    value={newMilestone.goal}
+                    onChange={(e)=>setNewMilestone({...newMilestone, goal: e.target.value})}
+                    placeholder="e.g., Complete Physics syllabus"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Target Credits</label>
+                  <input 
+                    type="number"
+                    value={newMilestone.target}
+                    onChange={(e)=>setNewMilestone({...newMilestone, target: e.target.value})}
+                    placeholder="500"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-xl text-center focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Deadline</label>
+                  <input 
+                    type="date"
+                    value={newMilestone.deadline}
+                    onChange={(e)=>setNewMilestone({...newMilestone, deadline: e.target.value})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={()=>setShowMilestoneModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addMilestone}
+                  className="flex-1 py-4 bg-purple-600 rounded-2xl font-black uppercase text-sm hover:bg-purple-500"
+                >
+                  Create Goal ✨
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 😊 MOOD MODAL */}
+      <AnimatePresence>
+        {showMoodModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowMoodModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">Log Your Mood 😊</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">How do you feel?</label>
+                  <div className="grid grid-cols-4 gap-4">
+                    {[
+                      { val: 0, emoji: '😫', label: 'Confused' },
+                      { val: 1, emoji: '😐', label: 'Learning' },
+                      { val: 2, emoji: '😊', label: 'Got it' },
+                      { val: 3, emoji: '🤓', label: 'Mastered' }
+                    ].map(m => (
+                      <button
+                        key={m.val}
+                        onClick={()=>setCurrentMood({...currentMood, mood: m.val})}
+                        className={`p-4 rounded-2xl border transition-all ${currentMood.mood === m.val ? 'bg-pink-600 border-pink-400' : 'bg-black/20 border-white/10'}`}
+                      >
+                        <p className="text-4xl mb-2">{m.emoji}</p>
+                        <p className="text-xs font-black">{m.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select 
+                    value={currentMood.subject}
+                    onChange={(e)=>setCurrentMood({...currentMood, subject: e.target.value})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-pink-500 focus:outline-none"
+                  >
+                    <option value="">Select Subject</option>
+                    {SUBJECTS.map(s => (
+                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={()=>setShowMoodModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addMoodEntry}
+                  className="flex-1 py-4 bg-pink-600 rounded-2xl font-black uppercase text-sm hover:bg-pink-500"
+                >
+                  Log Mood (+10 SC)
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📝 PAST PAPER MODAL */}
+      <AnimatePresence>
+        {showPaperModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowPaperModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">Add Past Paper 📝</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select 
+                    value={newPaper.subject}
+                    onChange={(e)=>setNewPaper({...newPaper, subject: e.target.value})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select Subject</option>
+                    {SUBJECTS.map(s => (
+                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Year</label>
+                  <input 
+                    type="text"
+                    value={newPaper.year}
+                    onChange={(e)=>setNewPaper({...newPaper, year: e.target.value})}
+                    placeholder="2024"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Score (%)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={newPaper.score}
+                    onChange={(e)=>setNewPaper({...newPaper, score: e.target.value})}
+                    placeholder="85"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-2xl text-center focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Time Spent (mins)</label>
+                  <input 
+                    type="number"
+                    value={newPaper.timeSpent}
+                    onChange={(e)=>setNewPaper({...newPaper, timeSpent: e.target.value})}
+                    placeholder="180"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={()=>setShowPaperModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addPastPaper}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase text-sm hover:bg-blue-500"
+                >
+                  Add Paper ✅
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎉 MOTIVATIONAL UNLOCK MODAL */}
+      <AnimatePresence>
+        {showMotivation && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={()=>setShowMotivation(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.5, rotate: -10}}
+              animate={{scale: 1, rotate: 0}}
+              exit={{scale: 0.5, rotate: 10}}
+              onClick={(e)=>e.stopPropagation()}
+              className="bg-gradient-to-br from-purple-600 to-pink-600 p-12 rounded-[3rem] max-w-lg text-center space-y-6 shadow-2xl"
+            >
+              <motion.div
+                animate={{y: [0, -20, 0]}}
+                transition={{repeat: Infinity, duration: 2}}
+                className="text-8xl"
+              >
+                🎉
+              </motion.div>
+              <h2 className="text-3xl font-black uppercase">Milestone Reached!</h2>
+              <p className="text-xl italic">"{currentQuote}"</p>
+              <p className="text-sm font-black">You've earned {lastUnlockAt * 100} total credits! 🏆</p>
+              <button 
+                onClick={()=>setShowMotivation(false)}
+                className="w-full py-5 bg-white text-purple-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
+              >
+                Keep Going! 💪
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 👻 GHOST MODE */}
       <AnimatePresence>
         {isGhostMode && (
@@ -968,9 +2067,9 @@ export default function ScholarOS() {
 
 function NavBtn({icon, active, onClick, label}: any) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-4 p-4 lg:p-5 rounded-2xl transition-all group ${active ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-      <span>{icon}</span>
-      <span className="hidden xl:block text-[11px] font-black uppercase tracking-widest">{label}</span>
+    <button onClick={onClick} className={`flex items-center gap-2 lg:gap-4 p-2 lg:p-3 rounded-xl transition-all group whitespace-nowrap ${active ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+      <span className="flex-shrink-0">{icon}</span>
+      <span className="hidden xl:block text-[9px] font-black uppercase tracking-widest">{label}</span>
     </button>
   );
 }
