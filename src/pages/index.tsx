@@ -1108,7 +1108,7 @@ export default function ScholarOS() {
                   <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Credit ROI 💎</h3>
                   <div className="space-y-4">
                     <div className="text-center">
-                      <p className="text-5xl font-black font-mono">{totalHours > 0 ? (sc / parseFloat(totalHours)).toFixed(1) : '0'}</p>
+                      <p className="text-5xl font-black font-mono">{totalSeconds > 0 ? (sc / parseFloat(totalHours)).toFixed(1) : '0'}</p>
                       <p className="text-xs text-slate-400">SC / HOUR</p>
                     </div>
                     {SUBJECTS.slice(0, 4).map(s => (
