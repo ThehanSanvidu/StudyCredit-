@@ -1,8 +1,6 @@
 "use client";
-import { signIn, signOut, useSession } from 'next-auth/react';
-import { trpc } from '@/lib/trpc';
-import { useTheme } from 'next-themes';
-import { ThemeProvider } from '@/components/theme-provider';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -243,7 +241,7 @@ export default function ScholarOS() {
 	// After line 250, ADD:
 
   // Auth & Sync
-  const { data: session, status } = useSession();
+  const session = null; // Auth disabled for now
   
   // Theme Customizer
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
@@ -795,10 +793,8 @@ export default function ScholarOS() {
   };
 
   const syncDataToCloud = async () => {
-    if (!session?.user?.email) {
-      alert("Please login to sync! 🔐");
-      return;
-    }
+  alert("Cloud sync coming soon! 🚧 For now, data is saved locally.");
+};
     
     alert("Syncing to cloud... ☁️");
     // Sync logic handled by tRPC - see setup guide
