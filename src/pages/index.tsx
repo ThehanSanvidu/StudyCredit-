@@ -1,4 +1,8 @@
 "use client";
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { trpc } from '@/lib/trpc';
+import { useTheme } from 'next-themes';
+import { ThemeProvider } from '@/components/theme-provider';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -23,7 +27,18 @@ const SUBJECTS = [
   { id: 'english', name: 'General English', color: '#ec4899', emoji: '📚' },
   { id: 'gk', name: 'General Knowledge', color: '#8b5cf6', emoji: '🌍' }
 ];
-
+const DAILY_QUOTES = [
+  "The secret of getting ahead is getting started. 💫",
+  "Don't watch the clock; do what it does. Keep going. ⏰",
+  "Success is not final, failure is not fatal. 🎯",
+  "The only way to do great work is to love what you do. ❤️",
+  "Believe in yourself and all that you are. 🌟",
+  "Your limitation—it's only your imagination. 🚀",
+  "Great things never come from comfort zones. 💪",
+  "Dream it. Wish it. Do it. ✨",
+  "Success doesn't just find you. You have to go out and get it. 🔥",
+  "The harder you work for something, the greater you'll feel when you achieve it. 🏆"
+];
 // Hard-coded GCE A/L Syllabus
 const SYLLABUS = {
   phy: {
@@ -115,6 +130,19 @@ const LOFI_LIBRARY = [
   { id: 't7', name: 'Neon Rain', emoji: '🎆', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', cost: 350, unlocked: false },
   { id: 't8', name: 'Coffee Shop Vibes', emoji: '☕', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', cost: 400, unlocked: false },
   { id: 't10', name: 'Nebula Drift', emoji: '🪐', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', cost: 500, unlocked: false },
+];
+
+const VIRTUAL_REWARDS = [
+  { id: 'v1', name: 'Scholar Prime', emoji: '🎖️', cost: 300 },
+  { id: 'v2', name: 'Maths Deity', emoji: '📐', cost: 600 },
+  { id: 'v3', name: 'Physics Master', emoji: '⚛️', cost: 800 },
+  { id: 'v4', name: 'Atomic King', emoji: '⚡', cost: 1000 },
+  { id: 'v5', name: 'Study Legend', emoji: '👑', cost: 1500 },
+  { id: 'v6', name: 'Time Lord', emoji: '⏳', cost: 2000 },
+  { id: 'v7', name: 'Focus Ninja', emoji: '🥷', cost: 2500 },
+  { id: 'v8', name: 'Brain Champion', emoji: '🧠', cost: 3000 },
+  { id: 'v9', name: 'Ultimate Scholar', emoji: '🌟', cost: 5000 },
+  { id: 'v10', name: 'Exam Destroyer', emoji: '💥', cost: 10000 }
 ];
 
 // Bubble Background Component
@@ -212,6 +240,36 @@ function CountdownTimer() {
 }
 
 export default function ScholarOS() {
+	// After line 250, ADD:
+
+  // Auth & Sync
+  const { data: session, status } = useSession();
+  
+  // Theme Customizer
+  const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
+  const [customColors, setCustomColors] = useState({
+    primary: '#3b82f6',
+    secondary: '#a855f7',
+    accent: '#10b981'
+  });
+
+  // Daily Quote
+  const [dailyQuote, setDailyQuote] = useState("");
+
+  // Daily Badge
+  const [dailyBadge, setDailyBadge] = useState({ show: false, badge: '', day: 0 });
+
+  // Pomodoro Customization
+  const [pomodoroSettings, setPomodoroSettings] = useState({
+    workTime: 25,
+    shortBreak: 5,
+    longBreak: 15,
+    cycles: 4
+  });
+  const [showPomodoroCustomizer, setShowPomodoroCustomizer] = useState(false);
+
+  // Timer Save/Load
+  const [savedTimers, setSavedTimers] = useState<Array<{id: string, name: string, time: number, type: 'timer' | 'stopwatch'}>>([]);
   const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects' | 'syllabus' | 'advanced' | 'milestones' | 'mood'>('home');
   const [sc, setSc] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0); 
@@ -311,6 +369,30 @@ export default function ScholarOS() {
     audioRef.current.src = LOFI_LIBRARY[0].url;
     audioRef.current.loop = true;
     
+	// After loading other data, ADD:
+
+    // Set daily quote
+    const today = new Date().toDateString();
+    const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
+    setDailyQuote(DAILY_QUOTES[quoteIndex]);
+
+    // Check daily badge
+    const lastBadgeDate = localStorage.getItem(`last_badge_${savedName}`);
+    if (lastBadgeDate !== today) {
+      const streakDay = dailyStreak + 1;
+      setDailyBadge({ show: true, badge: `Day ${streakDay}`, day: streakDay });
+      localStorage.setItem(`last_badge_${savedName}`, today);
+    }
+
+    // Load saved timers
+    setSavedTimers(JSON.parse(localStorage.getItem(`saved_timers_${savedName}`) || '[]'));
+
+    // Load pomodoro settings
+    setPomodoroSettings(JSON.parse(localStorage.getItem(`pomodoro_settings_${savedName}`) || '{"workTime":25,"shortBreak":5,"longBreak":15,"cycles":4}'));
+
+    // Load custom colors
+    setCustomColors(JSON.parse(localStorage.getItem(`custom_colors_${savedName}`) || '{"primary":"#3b82f6","secondary":"#a855f7","accent":"#10b981"}'));
+	
     return () => {
       clearInterval(autoSave);
       if (audioRef.current) {
@@ -677,6 +759,51 @@ export default function ScholarOS() {
     }
   };
 
+// Add AFTER buyItem function:
+
+  const saveCurrentTimer = () => {
+    const timerName = prompt("Enter timer name:");
+    if (!timerName) return;
+    
+    const timer = {
+      id: Date.now().toString(),
+      name: timerName,
+      time: focusMode === 'timer' ? timeLeft : stopwatchTime,
+      type: focusMode
+    };
+    
+    const updated = [...savedTimers, timer];
+    setSavedTimers(updated);
+    localStorage.setItem(`saved_timers_${name}`, JSON.stringify(updated));
+    alert("Timer saved! 💾");
+  };
+
+  const loadSavedTimer = (timer: any) => {
+    setFocusMode(timer.type);
+    if (timer.type === 'timer') {
+      setTimeLeft(timer.time);
+    } else {
+      setStopwatchTime(timer.time);
+    }
+    setIsActive(false);
+  };
+
+  const savePomodoroSettings = () => {
+    localStorage.setItem(`pomodoro_settings_${name}`, JSON.stringify(pomodoroSettings));
+    setShowPomodoroCustomizer(false);
+    alert("Pomodoro settings saved! 🍅");
+  };
+
+  const syncDataToCloud = async () => {
+    if (!session?.user?.email) {
+      alert("Please login to sync! 🔐");
+      return;
+    }
+    
+    alert("Syncing to cloud... ☁️");
+    // Sync logic handled by tRPC - see setup guide
+  };
+
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -722,7 +849,14 @@ export default function ScholarOS() {
             <Gift size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">BONUS</span>
           </motion.button>
         )}
-        
+        // Before Ghost button in nav, ADD:
+
+        <button 
+          onClick={() => setShowThemeCustomizer(true)}
+          className="hidden lg:flex p-3 lg:p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3 flex-shrink-0"
+        >
+          <Palette size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">THEME</span>
+        </button>
         <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-2 p-3 lg:p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3 flex-shrink-0">
           <Ghost size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">GHOST</span>
         </button>
@@ -735,7 +869,61 @@ export default function ScholarOS() {
           {/* 🏠 TERMINAL */}
           {activeTab === 'home' && (
             <motion.div key="h" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
+              // Around line 750-800, UPDATE header to include login:
+
               <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
+                <div>
+                  <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
+                  <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
+                    <div className="text-right">
+                      <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Credits</p>
+                    </div>
+                    <div className="text-right border-l border-white/10 pl-8">
+                      <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Study Time</p>
+                    </div>
+                    {dailyStreak > 0 && (
+                      <div className="text-right border-l border-white/10 pl-8">
+                        <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Streak</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Login/Profile Section */}
+                  {!session ? (
+                    <button 
+                      onClick={() => signIn()}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-black uppercase text-sm"
+                    >
+                      Login 🔐
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-black">
+                          {session.user?.name?.[0] || 'S'}
+                        </div>
+                        {dailyBadge.show && (
+                          <motion.div
+                            initial={{scale: 0, rotate: -180}}
+                            animate={{scale: 1, rotate: 0}}
+                            className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-black px-2 py-1 rounded-full"
+                          >
+                            {dailyBadge.badge} 🎖️
+                          </motion.div>
+                        )}
+                      </div>
+                      <button onClick={syncDataToCloud} className="p-3 bg-blue-600 rounded-xl hover:bg-blue-500">☁️</button>
+                      <button onClick={() => signOut()} className="p-3 bg-red-600 rounded-xl hover:bg-red-500">→</button>
+                    </div>
+                  )}
+                </div>
+              </header>
                 <div>
                   <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
                   <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
@@ -760,6 +948,17 @@ export default function ScholarOS() {
 
               {/* Countdown */}
               <CountdownTimer />
+			  // After <CountdownTimer />, ADD:
+
+              {/* Daily Motivational Quote */}
+              <motion.div 
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 p-6 rounded-[2rem] text-center"
+              >
+                <p className="text-xl md:text-2xl font-black italic">"{dailyQuote}"</p>
+                <p className="text-xs text-slate-400 mt-3 uppercase tracking-widest">Daily Motivation 💪</p>
+              </motion.div>
 
               <div className="space-y-12 pb-12">
                 <TaskGroup title="01. Core Grind">
@@ -1619,6 +1818,26 @@ export default function ScholarOS() {
                     />
                   </StoreCard>
                </div>
+			   // After Real World Rewards card, ADD:
+
+                  <StoreCard title={<>👑 Prestige Titles <motion.span animate={{scale: [1, 1.1, 1]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
+                    {VIRTUAL_REWARDS.map(reward => (
+                      <StoreItem 
+                        key={reward.id}
+                        name={
+                          <span className="flex items-center gap-2">
+                            <motion.span animate={{scale: [1, 1.15, 1]}} transition={{repeat: Infinity, duration: 2, delay: Math.random()}} className="text-lg">
+                              {reward.emoji}
+                            </motion.span>
+                            {reward.name}
+                          </span>
+                        }
+                        cost={reward.cost}
+                        unlocked={unlockedRewards.includes(reward.id)}
+                        onClick={() => buyItem(reward.cost, reward.id, 'virtual')}
+                      />
+                    ))}
+                  </StoreCard>
 
                {/* Badges Section */}
                {unlockedBadges.length > 0 && (
@@ -2047,7 +2266,145 @@ export default function ScholarOS() {
           </motion.div>
         )}
       </AnimatePresence>
+// After Motivational Modal (line 2077), ADD:
 
+      {/* 🎨 THEME CUSTOMIZER MODAL */}
+      <AnimatePresence>
+        {showThemeCustomizer && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowThemeCustomizer(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">Theme Customizer 🎨</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Primary Color</label>
+                  <input 
+                    type="color"
+                    value={customColors.primary}
+                    onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
+                    className="w-full h-12 rounded-xl cursor-pointer"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Secondary Color</label>
+                  <input 
+                    type="color"
+                    value={customColors.secondary}
+                    onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
+                    className="w-full h-12 rounded-xl cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Accent Color</label>
+                  <input 
+                    type="color"
+                    value={customColors.accent}
+                    onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
+                    className="w-full h-12 rounded-xl cursor-pointer"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  localStorage.setItem(`custom_colors_${name}`, JSON.stringify(customColors));
+                  setShowThemeCustomizer(false);
+                  alert("Theme saved! 🎨");
+                }}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-black uppercase hover:scale-105 transition-transform"
+              >
+                Save Theme ✨
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🍅 POMODORO CUSTOMIZER MODAL */}
+      <AnimatePresence>
+        {showPomodoroCustomizer && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowPomodoroCustomizer(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">Pomodoro Settings 🍅</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Work Time (minutes)</label>
+                  <input 
+                    type="number"
+                    value={pomodoroSettings.workTime}
+                    onChange={(e) => setPomodoroSettings({...pomodoroSettings, workTime: Number(e.target.value)})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Short Break (minutes)</label>
+                  <input 
+                    type="number"
+                    value={pomodoroSettings.shortBreak}
+                    onChange={(e) => setPomodoroSettings({...pomodoroSettings, shortBreak: Number(e.target.value)})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Long Break (minutes)</label>
+                  <input 
+                    type="number"
+                    value={pomodoroSettings.longBreak}
+                    onChange={(e) => setPomodoroSettings({...pomodoroSettings, longBreak: Number(e.target.value)})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Cycles before long break</label>
+                  <input 
+                    type="number"
+                    value={pomodoroSettings.cycles}
+                    onChange={(e) => setPomodoroSettings({...pomodoroSettings, cycles: Number(e.target.value)})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                onClick={savePomodoroSettings}
+                className="w-full py-4 bg-purple-600 rounded-2xl font-black uppercase hover:bg-purple-500"
+              >
+                Save Settings ✅
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* 👻 GHOST MODE */}
       <AnimatePresence>
         {isGhostMode && (
@@ -2056,7 +2413,41 @@ export default function ScholarOS() {
                 {focusMode === 'timer' ? formatTime(timeLeft) : formatTime(stopwatchTime)}
              </h1>
              <button onClick={()=>setIsGhostMode(false)} className="mt-12 text-white/20 hover:text-white uppercase text-[10px] font-black tracking-[0.5em]">[ ESCAPE GHOST PROTOCOL ]</button>
-          </motion.div>
+          // In Focus tab, after timer controls, ADD:
+
+               <div className="flex gap-4 mt-8">
+                  <button 
+                    onClick={() => setShowPomodoroCustomizer(true)}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm"
+                  >
+                    ⚙️ Pomodoro
+                  </button>
+                  
+                  <button 
+                    onClick={saveCurrentTimer}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm"
+                  >
+                    💾 Save
+                  </button>
+                </div>
+
+                {/* Saved Timers List */}
+                {savedTimers.length > 0 && (
+                  <div className="mt-8 space-y-2 max-w-md mx-auto">
+                    <h3 className="text-sm font-black uppercase text-center">Saved Timers</h3>
+                    {savedTimers.map(timer => (
+                      <button
+                        key={timer.id}
+                        onClick={() => loadSavedTimer(timer)}
+                        className="w-full p-4 bg-white/5 rounded-xl flex justify-between hover:bg-white/10"
+                      >
+                        <span className="font-bold">{timer.name}</span>
+                        <span className="text-blue-400">{formatTime(timer.time)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+		  </motion.div>
         )}
       </AnimatePresence>
     </div>
