@@ -655,9 +655,11 @@ export default function ScholarOS() {
         ...prev,
         [selectedSubject]: [...(prev[selectedSubject] || []), parseInt(newMark)]
       }));
+      setSelectedSubject('');
       setNewMark('');
       setShowAddMarkModal(false);
       claimTask(parseInt(newMark) / 2);
+      confetti({ particleCount: 100, spread: 70 });
     }
   };
 
@@ -941,6 +943,7 @@ export default function ScholarOS() {
                 <TaskItem name="Log Today's Mood" sc={20} icon={<Smile/>} onClick={() => setShowMoodLog(true)} />
                 <TaskItem name="Set New Milestone" sc={30} icon={<Target/>} onClick={() => setShowNewMilestone(true)} />
                 <TaskItem name="Add Past Paper Result" sc={25} icon={<Award/>} onClick={() => setShowPaperModal(true)} />
+                <TaskItem name="Add Exam Mark" sc={15} icon={<BarChart3/>} onClick={() => setShowAddMarkModal(true)} />
                 <TaskItem name="Export Progress Report" sc={0} icon={<Download/>} onClick={exportReport} />
               </TaskGroup>
             </motion.div>
@@ -1040,7 +1043,15 @@ export default function ScholarOS() {
           {/* 📊 ANALYTICS TAB */}
           {activeTab === 'analytics' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
-              <h2 className="text-4xl font-black uppercase">📊 Analytics</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black uppercase">📊 Analytics</h2>
+                <button 
+                  onClick={() => setShowAddMarkModal(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={16}/> Add Mark
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10">
@@ -1062,6 +1073,42 @@ export default function ScholarOS() {
                 </div>
               </div>
 
+              {/* Overall Exam Performance */}
+              {Object.keys(examMarks).length > 0 && (() => {
+                const allMarks = Object.values(examMarks).flat();
+                const overallAvg = allMarks.reduce((a, b) => a + b, 0) / allMarks.length;
+                const totalExams = allMarks.length;
+                const bestMark = Math.max(...allMarks);
+                const aGrades = allMarks.filter(m => m >= 75).length;
+                
+                return (
+                  <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-xl p-8 rounded-[2.5rem] border border-blue-500/20">
+                    <h3 className="text-2xl font-black mb-6 uppercase flex items-center gap-3">
+                      <Award className="text-amber-400" size={32}/>
+                      Overall Exam Performance
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="text-center">
+                        <p className="text-5xl font-mono font-black text-blue-400">{overallAvg.toFixed(1)}%</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Average</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-5xl font-mono font-black text-emerald-400">{bestMark}%</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Best Score</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-5xl font-mono font-black text-purple-400">{totalExams}</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Total Exams</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-5xl font-mono font-black text-amber-400">{aGrades}</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">A Grades</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
                 <h3 className="text-2xl font-black mb-6 uppercase">Subject Progress</h3>
                 <div className="space-y-6">
@@ -1074,6 +1121,99 @@ export default function ScholarOS() {
                     />
                   ))}
                 </div>
+              </div>
+
+              {/* Exam Marks Chart */}
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-black uppercase">📊 Exam Marks Progress</h3>
+                  <button 
+                    onClick={() => setShowAddMarkModal(true)}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                  >
+                    <Plus size={16}/> Add Mark
+                  </button>
+                </div>
+                
+                {Object.keys(examMarks).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {SUBJECTS.map(subj => {
+                      const marks = examMarks[subj.name] || [];
+                      if (marks.length === 0) return null;
+                      
+                      const avgMark = marks.reduce((a, b) => a + b, 0) / marks.length;
+                      const maxMark = Math.max(...marks);
+                      const minMark = Math.min(...marks);
+                      const trend = marks.length > 1 ? marks[marks.length - 1] - marks[marks.length - 2] : 0;
+                      
+                      return (
+                        <div key={subj.id} className="bg-black/40 p-6 rounded-2xl">
+                          <div className="flex items-center gap-3 mb-4">
+                            <span className="text-3xl">{subj.emoji}</span>
+                            <div className="flex-1">
+                              <h4 className="font-black">{subj.name}</h4>
+                              <p className="text-xs text-slate-500">{marks.length} exams</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3 mb-4">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Average:</span>
+                              <span className="font-black text-blue-400">{avgMark.toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Best:</span>
+                              <span className="font-black text-emerald-400">{maxMark}%</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-400">Lowest:</span>
+                              <span className="font-black text-orange-400">{minMark}%</span>
+                            </div>
+                            {marks.length > 1 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-slate-400">Trend:</span>
+                                <span className={`font-black ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                                  {trend > 0 ? '↗' : trend < 0 ? '↘' : '→'} {Math.abs(trend).toFixed(1)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Mini Chart */}
+                          <div className="h-24 flex items-end gap-1">
+                            {marks.map((mark, idx) => (
+                              <div 
+                                key={idx}
+                                className="flex-1 bg-gradient-to-t from-blue-600 to-purple-600 rounded-t relative group"
+                                style={{ height: `${mark}%` }}
+                              >
+                                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                  {mark}%
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex justify-between mt-2 text-[9px] text-slate-500 font-bold">
+                            <span>Exam 1</span>
+                            <span>Exam {marks.length}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-20 text-slate-500">
+                    <BarChart3 size={64} className="mx-auto mb-4 opacity-20"/>
+                    <p className="text-lg font-bold mb-2">No exam marks recorded yet</p>
+                    <p className="text-sm mb-6">Start tracking your progress by adding your first exam mark!</p>
+                    <button 
+                      onClick={() => setShowAddMarkModal(true)}
+                      className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm inline-flex items-center gap-2"
+                    >
+                      <Plus size={18}/> Add Your First Mark
+                    </button>
+                  </div>
+                )}
               </div>
 
               {pastPapers.length > 0 && (
@@ -2008,6 +2148,101 @@ export default function ScholarOS() {
               >
                 Keep Going! 💪
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📊 ADD EXAM MARK MODAL */}
+      <AnimatePresence>
+        {showAddMarkModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowAddMarkModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">📊 Add Exam Mark</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select subject...</option>
+                    {SUBJECTS.map(subj => (
+                      <option key={subj.id} value={subj.name}>{subj.emoji} {subj.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Mark (%)</label>
+                  <input 
+                    type="number"
+                    value={newMark}
+                    onChange={(e) => setNewMark(e.target.value)}
+                    placeholder="85"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none text-center text-3xl"
+                    min="0"
+                    max="100"
+                  />
+                  <div className="flex justify-between mt-2 px-2">
+                    <span className="text-xs text-slate-500">0%</span>
+                    <span className="text-xs text-slate-500">100%</span>
+                  </div>
+                </div>
+
+                {/* Grade Preview */}
+                {newMark && (
+                  <div className="bg-black/40 p-6 rounded-2xl text-center">
+                    <p className="text-xs font-black uppercase text-slate-400 mb-2">Grade</p>
+                    <p className="text-5xl font-black">
+                      {parseInt(newMark) >= 75 ? (
+                        <span className="text-emerald-400">A</span>
+                      ) : parseInt(newMark) >= 65 ? (
+                        <span className="text-blue-400">B</span>
+                      ) : parseInt(newMark) >= 55 ? (
+                        <span className="text-purple-400">C</span>
+                      ) : parseInt(newMark) >= 45 ? (
+                        <span className="text-orange-400">S</span>
+                      ) : (
+                        <span className="text-red-400">W</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    setShowAddMarkModal(false);
+                    setSelectedSubject('');
+                    setNewMark('');
+                  }}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addExamMark}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase hover:bg-blue-500"
+                >
+                  Add Mark ✅
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
