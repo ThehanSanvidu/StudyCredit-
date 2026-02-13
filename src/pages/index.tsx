@@ -1,8 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Flame, Target, CheckCircle, Zap, Clock, Wand2, Sword, Music, Pause, Play,
   Brain, Calculator, RotateCcw, Layout, Edit3, FlaskConical, Beaker, 
@@ -10,7 +8,7 @@ import {
   ShoppingCart, Coffee, FastForward, Star, SkipForward, SkipBack, Apple, 
   BarChart3, ClipboardList, Home, Radio, Disc, Volume2, Timer, Settings, Dumbbell, Smartphone, AlertCircle, Link,
   BookOpen, TrendingUp, Plus, Gift, Sparkles, Download, FileText, Smile, Frown, Meh,
-  Award, PieChart, Activity, Flag, Rocket, CheckSquare, Square, Target as TargetIcon
+  Award, PieChart, Activity, Flag, Rocket, CheckSquare, Square, Target as TargetIcon, Save, Upload
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -25,6 +23,7 @@ const SUBJECTS = [
   { id: 'english', name: 'General English', color: '#ec4899', emoji: '📚' },
   { id: 'gk', name: 'General Knowledge', color: '#8b5cf6', emoji: '🌍' }
 ];
+
 const DAILY_QUOTES = [
   "The secret of getting ahead is getting started. 💫",
   "Don't watch the clock; do what it does. Keep going. ⏰",
@@ -35,8 +34,14 @@ const DAILY_QUOTES = [
   "Great things never come from comfort zones. 💪",
   "Dream it. Wish it. Do it. ✨",
   "Success doesn't just find you. You have to go out and get it. 🔥",
-  "The harder you work for something, the greater you'll feel when you achieve it. 🏆"
+  "The harder you work for something, the greater you'll feel when you achieve it. 🏆",
+  "Every expert was once a beginner. Keep going! 🚀",
+  "Your only limit is you. Break through! ⚡",
+  "The harder you work, the luckier you get. 🍀",
+  "Believe you can and you're halfway there. 🌟",
+  "Dream big. Work hard. Stay focused. 🎯"
 ];
+
 // Hard-coded GCE A/L Syllabus
 const SYLLABUS = {
   phy: {
@@ -134,13 +139,29 @@ const VIRTUAL_REWARDS = [
   { id: 'v1', name: 'Scholar Prime', emoji: '🎖️', cost: 300 },
   { id: 'v2', name: 'Maths Deity', emoji: '📐', cost: 600 },
   { id: 'v3', name: 'Physics Master', emoji: '⚛️', cost: 800 },
-  { id: 'v4', name: 'Atomic King', emoji: '⚡', cost: 1000 },
+  { id: 'v4', name: 'Chemistry King', emoji: '🧪', cost: 1000 },
   { id: 'v5', name: 'Study Legend', emoji: '👑', cost: 1500 },
   { id: 'v6', name: 'Time Lord', emoji: '⏳', cost: 2000 },
   { id: 'v7', name: 'Focus Ninja', emoji: '🥷', cost: 2500 },
   { id: 'v8', name: 'Brain Champion', emoji: '🧠', cost: 3000 },
-  { id: 'v9', name: 'Ultimate Scholar', emoji: '🌟', cost: 5000 },
-  { id: 'v10', name: 'Exam Destroyer', emoji: '💥', cost: 10000 }
+  { id: 'v9', name: 'Exam Destroyer', emoji: '💥', cost: 4000 },
+  { id: 'v10', name: 'Ultimate Scholar', emoji: '🌟', cost: 5000 },
+  { id: 'v11', name: 'Knowledge Guru', emoji: '🔮', cost: 6000 },
+  { id: 'v12', name: 'Academic Titan', emoji: '⚔️', cost: 8000 },
+  { id: 'v13', name: 'Study Samurai', emoji: '🗡️', cost: 10000 },
+  { id: 'v14', name: 'Einstein Jr.', emoji: '🧑‍🔬', cost: 15000 },
+  { id: 'v15', name: 'Legendary A+ God', emoji: '👾', cost: 20000 }
+];
+
+const BADGE_TIERS = [
+  { day: 1, emoji: '🌱', name: 'Seedling' },
+  { day: 3, emoji: '🔥', name: 'Ignited' },
+  { day: 7, emoji: '⭐', name: 'Rising Star' },
+  { day: 14, emoji: '💎', name: 'Diamond' },
+  { day: 30, emoji: '👑', name: 'Crowned' },
+  { day: 50, emoji: '🚀', name: 'Rocket' },
+  { day: 100, emoji: '🏆', name: 'Champion' },
+  { day: 365, emoji: '🌟', name: 'Legend' }
 ];
 
 // Bubble Background Component
@@ -238,12 +259,42 @@ function CountdownTimer() {
 }
 
 export default function ScholarOS() {
-	// After line 250, ADD:
+  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects' | 'syllabus' | 'advanced' | 'milestones' | 'mood'>('home');
+  const [sc, setSc] = useState(0);
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  const [name, setName] = useState("Scholar");
+  const [isGhostMode, setIsGhostMode] = useState(false);
+  const [completedTopics, setCompletedTopics] = useState<Record<string, string[]>>({});
+  const [milestones, setMilestones] = useState<Array<{id: string, goal: string, target: number, deadline: string, completed: boolean}>>([]);
+  const [moodHistory, setMoodHistory] = useState<Array<{date: string, mood: number, subject: string, credits: number}>>([]);
+  const [pastPapers, setPastPapers] = useState<Array<{id: string, subject: string, year: string, score: number, date: string, timeSpent: number}>>([]);
+  const [currentTheme, setCurrentTheme] = useState('dark');
+  const [unlockedThemes, setUnlockedThemes] = useState<string[]>(['dark']);
+  const [lastUnlockAt, setLastUnlockAt] = useState(0);
+  const [showMotivation, setShowMotivation] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState("");
+  const [simMode, setSimMode] = useState(false);
+  const [simTime, setSimTime] = useState(10800);
+  const [simActive, setSimActive] = useState(false);
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [lastClaimDate, setLastClaimDate] = useState("");
+  const [showBonusModal, setShowBonusModal] = useState(false);
+  const [examMarks, setExamMarks] = useState<Record<string, number[]>>({});
+  const [showAddMarkModal, setShowAddMarkModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [newMark, setNewMark] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [unlockedTracks, setUnlockedTracks] = useState<string[]>(['t1']);
+  const [unlockedRewards, setUnlockedRewards] = useState<string[]>([]);
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
+  const [focusMode, setFocusMode] = useState<'timer' | 'stopwatch'>('timer');
+  const [timeLeft, setTimeLeft] = useState(1500);
+  const [stopwatchTime, setStopwatchTime] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
 
-  // Auth & Sync
-  const session = null; // Auth disabled for now
-  
-  // Theme Customizer
+  // NEW FEATURES - Theme Customizer
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const [customColors, setCustomColors] = useState({
     primary: '#3b82f6',
@@ -251,13 +302,13 @@ export default function ScholarOS() {
     accent: '#10b981'
   });
 
-  // Daily Quote
+  // NEW FEATURES - Daily Quote
   const [dailyQuote, setDailyQuote] = useState("");
 
-  // Daily Badge
-  const [dailyBadge, setDailyBadge] = useState({ show: false, badge: '', day: 0 });
+  // NEW FEATURES - Daily Badge
+  const [dailyBadge, setDailyBadge] = useState({ show: false, badge: '', emoji: '', day: 0 });
 
-  // Pomodoro Customization
+  // NEW FEATURES - Pomodoro Customization
   const [pomodoroSettings, setPomodoroSettings] = useState({
     workTime: 25,
     shortBreak: 5,
@@ -265,504 +316,419 @@ export default function ScholarOS() {
     cycles: 4
   });
   const [showPomodoroCustomizer, setShowPomodoroCustomizer] = useState(false);
+  const [pomodoroCycle, setPomodoroCycle] = useState(0);
+  const [pomodoroPhase, setPomodoroPhase] = useState<'work' | 'short' | 'long'>('work');
 
-  // Timer Save/Load
+  // NEW FEATURES - Timer Save/Load
   const [savedTimers, setSavedTimers] = useState<Array<{id: string, name: string, time: number, type: 'timer' | 'stopwatch'}>>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects' | 'syllabus' | 'advanced' | 'milestones' | 'mood'>('home');
-  const [sc, setSc] = useState(0);
-  const [totalSeconds, setTotalSeconds] = useState(0); 
-  const [name, setName] = useState("Scholar");
-  const [isGhostMode, setIsGhostMode] = useState(false);
-  
-  // Syllabus State
-  const [completedTopics, setCompletedTopics] = useState<Record<string, string[]>>({});
-  
-  // Milestones State
-  const [milestones, setMilestones] = useState<Array<{id: string, goal: string, target: number, deadline: string, completed: boolean}>>([]);
-  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [showSaveTimerModal, setShowSaveTimerModal] = useState(false);
+  const [timerName, setTimerName] = useState("");
+
+  // Modals
+  const [showNewMilestone, setShowNewMilestone] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ goal: '', target: '', deadline: '' });
-  
-  // Mood Tracker State
-  const [moodHistory, setMoodHistory] = useState<Array<{date: string, mood: number, subject: string, credits: number}>>([]);
-  const [showMoodModal, setShowMoodModal] = useState(false);
-  const [currentMood, setCurrentMood] = useState({ mood: 2, subject: '' });
-  
-  // Past Paper Tracker
-  const [pastPapers, setPastPapers] = useState<Array<{id: string, subject: string, year: string, score: number, date: string, timeSpent: number}>>([]);
+  const [showMoodLog, setShowMoodLog] = useState(false);
+  const [currentMood, setCurrentMood] = useState(3);
+  const [moodSubject, setMoodSubject] = useState('');
+  const [moodCredits, setMoodCredits] = useState('');
   const [showPaperModal, setShowPaperModal] = useState(false);
   const [newPaper, setNewPaper] = useState({ subject: '', year: '', score: '', timeSpent: '' });
-  
-  // Theme State
-  const [currentTheme, setCurrentTheme] = useState('dark');
-  const [unlockedThemes, setUnlockedThemes] = useState<string[]>(['dark']);
-  
-  // Motivational Unlocks
-  const [lastUnlockAt, setLastUnlockAt] = useState(0);
-  const [showMotivation, setShowMotivation] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState("");
-  
-  // Time Management Simulator
-  const [simMode, setSimMode] = useState(false);
-  const [simTime, setSimTime] = useState(10800); // 3 hours
-  const [simActive, setSimActive] = useState(false);
-  
-  // Daily Bonus State
-  const [dailyStreak, setDailyStreak] = useState(0);
-  const [lastClaimDate, setLastClaimDate] = useState("");
-  const [showBonusModal, setShowBonusModal] = useState(false);
-  
-  // Exam Marks State
-  const [examMarks, setExamMarks] = useState<Record<string, number[]>>({});
-  const [showAddMarkModal, setShowAddMarkModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [newMark, setNewMark] = useState("");
-  
-  // Stats
-  const [streak, setStreak] = useState(0);
-  const [unlockedTracks, setUnlockedTracks] = useState<string[]>(['t1']);
-  const [unlockedRewards, setUnlockedRewards] = useState<string[]>([]);
-  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
 
-  // Timer/Stopwatch State
-  const [focusMode, setFocusMode] = useState<'timer' | 'stopwatch'>('timer');
-  const [timeLeft, setTimeLeft] = useState(1500);
-  const [stopwatchTime, setStopwatchTime] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  
-  // Audio
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Load data from localStorage
+  // Initialize daily quote and badge
   useEffect(() => {
-    const savedName = localStorage.getItem('study_sync_name') || "Scholar";
-    setName(savedName);
-    setSc(Number(localStorage.getItem(`sc_${savedName}`)) || 0);
-    setTotalSeconds(Number(localStorage.getItem(`total_secs_${savedName}`)) || 0);
-    setUnlockedTracks(JSON.parse(localStorage.getItem(`tracks_${savedName}`) || '["t1"]'));
-    setUnlockedRewards(JSON.parse(localStorage.getItem(`rewards_${savedName}`) || '[]'));
-    setExamMarks(JSON.parse(localStorage.getItem(`exam_marks_${savedName}`) || '{}'));
-    setDailyStreak(Number(localStorage.getItem(`daily_streak_${savedName}`)) || 0);
-    setLastClaimDate(localStorage.getItem(`last_claim_${savedName}`) || "");
-    setCompletedTopics(JSON.parse(localStorage.getItem(`completed_topics_${savedName}`) || '{}'));
-    setMilestones(JSON.parse(localStorage.getItem(`milestones_${savedName}`) || '[]'));
-    setMoodHistory(JSON.parse(localStorage.getItem(`mood_history_${savedName}`) || '[]'));
-    setPastPapers(JSON.parse(localStorage.getItem(`past_papers_${savedName}`) || '[]'));
-    setUnlockedThemes(JSON.parse(localStorage.getItem(`themes_${savedName}`) || '["dark"]'));
-    setCurrentTheme(localStorage.getItem(`current_theme_${savedName}`) || 'dark');
-    setLastUnlockAt(Number(localStorage.getItem(`last_unlock_${savedName}`)) || 0);
-    setUnlockedBadges(JSON.parse(localStorage.getItem(`badges_${savedName}`) || '[]'));
-
-    // Auto-save every 30 seconds
-    const autoSave = setInterval(() => {
-      const backup = {
-        sc, totalSeconds, examMarks, completedTopics, milestones, moodHistory, pastPapers,
-        dailyStreak, unlockedTracks, unlockedRewards, unlockedBadges
-      };
-      localStorage.setItem(`backup_${savedName}_${Date.now()}`, JSON.stringify(backup));
-    }, 30000);
-
-    audioRef.current = new Audio();
-    audioRef.current.src = LOFI_LIBRARY[0].url;
-    audioRef.current.loop = true;
-    
-	// After loading other data, ADD:
-
-    // Set daily quote
     const today = new Date().toDateString();
     const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
     setDailyQuote(DAILY_QUOTES[quoteIndex]);
 
     // Check daily badge
-    const lastBadgeDate = localStorage.getItem(`last_badge_${savedName}`);
+    const lastBadgeDate = localStorage.getItem(`last_badge_${name}`);
     if (lastBadgeDate !== today) {
-      const streakDay = dailyStreak + 1;
-      setDailyBadge({ show: true, badge: `Day ${streakDay}`, day: streakDay });
-      localStorage.setItem(`last_badge_${savedName}`, today);
+      const currentStreak = dailyStreak > 0 ? dailyStreak : 1;
+      const badge = BADGE_TIERS.reverse().find(b => currentStreak >= b.day) || BADGE_TIERS[0];
+      setDailyBadge({ 
+        show: true, 
+        badge: badge.name, 
+        emoji: badge.emoji,
+        day: currentStreak 
+      });
+      localStorage.setItem(`last_badge_${name}`, today);
+      
+      // Hide badge after 5 seconds
+      setTimeout(() => {
+        setDailyBadge(prev => ({ ...prev, show: false }));
+      }, 5000);
     }
+  }, [dailyStreak, name]);
 
-    // Load saved timers
-    setSavedTimers(JSON.parse(localStorage.getItem(`saved_timers_${savedName}`) || '[]'));
+  // Load data from localStorage
+  useEffect(() => {
+    const savedName = localStorage.getItem('scholar_name');
+    const savedSc = localStorage.getItem('scholar_sc');
+    const savedSeconds = localStorage.getItem('scholar_totalSeconds');
+    const savedCompleted = localStorage.getItem('scholar_completedTopics');
+    const savedMilestones = localStorage.getItem('scholar_milestones');
+    const savedMoods = localStorage.getItem('scholar_moodHistory');
+    const savedPapers = localStorage.getItem('scholar_pastPapers');
+    const savedTheme = localStorage.getItem('scholar_currentTheme');
+    const savedUnlockedThemes = localStorage.getItem('scholar_unlockedThemes');
+    const savedLastUnlock = localStorage.getItem('scholar_lastUnlockAt');
+    const savedSimMode = localStorage.getItem('scholar_simMode');
+    const savedSimTime = localStorage.getItem('scholar_simTime');
+    const savedStreak = localStorage.getItem('scholar_dailyStreak');
+    const savedLastClaim = localStorage.getItem('scholar_lastClaimDate');
+    const savedMarks = localStorage.getItem('scholar_examMarks');
+    const savedUnlockedTracks = localStorage.getItem('scholar_unlockedTracks');
+    const savedUnlockedRewards = localStorage.getItem('scholar_unlockedRewards');
+    const savedUnlockedBadges = localStorage.getItem('scholar_unlockedBadges');
+    const savedCustomColors = localStorage.getItem(`custom_colors_${savedName || 'Scholar'}`);
+    const savedPomodoroSettings = localStorage.getItem(`pomodoro_settings_${savedName || 'Scholar'}`);
+    const savedTimersList = localStorage.getItem(`saved_timers_${savedName || 'Scholar'}`);
 
-    // Load pomodoro settings
-    setPomodoroSettings(JSON.parse(localStorage.getItem(`pomodoro_settings_${savedName}`) || '{"workTime":25,"shortBreak":5,"longBreak":15,"cycles":4}'));
+    if (savedName) setName(savedName);
+    if (savedSc) setSc(parseInt(savedSc));
+    if (savedSeconds) setTotalSeconds(parseInt(savedSeconds));
+    if (savedCompleted) setCompletedTopics(JSON.parse(savedCompleted));
+    if (savedMilestones) setMilestones(JSON.parse(savedMilestones));
+    if (savedMoods) setMoodHistory(JSON.parse(savedMoods));
+    if (savedPapers) setPastPapers(JSON.parse(savedPapers));
+    if (savedTheme) setCurrentTheme(savedTheme);
+    if (savedUnlockedThemes) setUnlockedThemes(JSON.parse(savedUnlockedThemes));
+    if (savedLastUnlock) setLastUnlockAt(parseInt(savedLastUnlock));
+    if (savedSimMode) setSimMode(savedSimMode === 'true');
+    if (savedSimTime) setSimTime(parseInt(savedSimTime));
+    if (savedStreak) setDailyStreak(parseInt(savedStreak));
+    if (savedLastClaim) setLastClaimDate(savedLastClaim);
+    if (savedMarks) setExamMarks(JSON.parse(savedMarks));
+    if (savedUnlockedTracks) setUnlockedTracks(JSON.parse(savedUnlockedTracks));
+    if (savedUnlockedRewards) setUnlockedRewards(JSON.parse(savedUnlockedRewards));
+    if (savedUnlockedBadges) setUnlockedBadges(JSON.parse(savedUnlockedBadges));
+    if (savedCustomColors) setCustomColors(JSON.parse(savedCustomColors));
+    if (savedPomodoroSettings) setPomodoroSettings(JSON.parse(savedPomodoroSettings));
+    if (savedTimersList) setSavedTimers(JSON.parse(savedTimersList));
 
-    // Load custom colors
-    setCustomColors(JSON.parse(localStorage.getItem(`custom_colors_${savedName}`) || '{"primary":"#3b82f6","secondary":"#a855f7","accent":"#10b981"}'));
-	
-    return () => {
-      clearInterval(autoSave);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+    // Check daily streak
+    const today = new Date().toDateString();
+    if (savedLastClaim !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (savedLastClaim === yesterday) {
+        // Continue streak
+      } else if (savedLastClaim !== today) {
+        // Reset streak
+        setDailyStreak(0);
       }
-    };
+    }
   }, []);
 
-  // Check for motivational unlocks
+  // Save data to localStorage
   useEffect(() => {
-    const hundredMark = Math.floor(sc / 100);
-    if (hundredMark > lastUnlockAt && sc > 0) {
-      setLastUnlockAt(hundredMark);
-      localStorage.setItem(`last_unlock_${name}`, hundredMark.toString());
-      setCurrentQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
-      setShowMotivation(true);
-      confetti({ particleCount: 200, spread: 90 });
-      
-      // Award badge
-      if (!unlockedBadges.includes(`badge_${hundredMark}`)) {
-        const newBadges = [...unlockedBadges, `badge_${hundredMark}`];
-        setUnlockedBadges(newBadges);
-        localStorage.setItem(`badges_${name}`, JSON.stringify(newBadges));
-      }
-    }
-  }, [sc]);
+    localStorage.setItem('scholar_name', name);
+    localStorage.setItem('scholar_sc', sc.toString());
+    localStorage.setItem('scholar_totalSeconds', totalSeconds.toString());
+    localStorage.setItem('scholar_completedTopics', JSON.stringify(completedTopics));
+    localStorage.setItem('scholar_milestones', JSON.stringify(milestones));
+    localStorage.setItem('scholar_moodHistory', JSON.stringify(moodHistory));
+    localStorage.setItem('scholar_pastPapers', JSON.stringify(pastPapers));
+    localStorage.setItem('scholar_currentTheme', currentTheme);
+    localStorage.setItem('scholar_unlockedThemes', JSON.stringify(unlockedThemes));
+    localStorage.setItem('scholar_lastUnlockAt', lastUnlockAt.toString());
+    localStorage.setItem('scholar_simMode', simMode.toString());
+    localStorage.setItem('scholar_simTime', simTime.toString());
+    localStorage.setItem('scholar_dailyStreak', dailyStreak.toString());
+    localStorage.setItem('scholar_lastClaimDate', lastClaimDate);
+    localStorage.setItem('scholar_examMarks', JSON.stringify(examMarks));
+    localStorage.setItem('scholar_unlockedTracks', JSON.stringify(unlockedTracks));
+    localStorage.setItem('scholar_unlockedRewards', JSON.stringify(unlockedRewards));
+    localStorage.setItem('scholar_unlockedBadges', JSON.stringify(unlockedBadges));
+    localStorage.setItem(`custom_colors_${name}`, JSON.stringify(customColors));
+    localStorage.setItem(`pomodoro_settings_${name}`, JSON.stringify(pomodoroSettings));
+    localStorage.setItem(`saved_timers_${name}`, JSON.stringify(savedTimers));
+  }, [name, sc, totalSeconds, completedTopics, milestones, moodHistory, pastPapers, currentTheme, unlockedThemes, lastUnlockAt, simMode, simTime, dailyStreak, lastClaimDate, examMarks, unlockedTracks, unlockedRewards, unlockedBadges, customColors, pomodoroSettings, savedTimers]);
 
-  // Simulator Timer
+  // Timer/Stopwatch logic
   useEffect(() => {
-    let interval: any;
-    if (simActive && simTime > 0) {
-      interval = setInterval(() => {
-        setSimTime(t => {
-          if (t <= 1) {
-            setSimActive(false);
-            alert("Time's up! Did you finish? 📝");
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [simActive, simTime]);
-
-  const toggleTopicCompletion = (subjectId: string, topicId: string) => {
-    const key = `${subjectId}-${topicId}`;
-    const current = completedTopics[subjectId] || [];
-    const updated = current.includes(key) 
-      ? current.filter(t => t !== key)
-      : [...current, key];
-    
-    const newCompleted = { ...completedTopics, [subjectId]: updated };
-    setCompletedTopics(newCompleted);
-    localStorage.setItem(`completed_topics_${name}`, JSON.stringify(newCompleted));
-    
-    if (!current.includes(key)) {
-      addSC(5);
-    }
-  };
-
-  const getTopicProgress = (subjectId: string) => {
-    const subject = SYLLABUS[subjectId as keyof typeof SYLLABUS];
-    if (!subject) return 0;
-    const totalTopics = subject.chapters.reduce((sum, ch) => sum + ch.topics.length, 0);
-    const completed = (completedTopics[subjectId] || []).length;
-    return totalTopics > 0 ? (completed / totalTopics) * 100 : 0;
-  };
-
-  const addMilestone = () => {
-    if (!newMilestone.goal || !newMilestone.target || !newMilestone.deadline) {
-      alert("Please fill all fields! 🎯");
-      return;
-    }
-    
-    const milestone = {
-      id: Date.now().toString(),
-      goal: newMilestone.goal,
-      target: Number(newMilestone.target),
-      deadline: newMilestone.deadline,
-      completed: false
-    };
-    
-    const updated = [...milestones, milestone];
-    setMilestones(updated);
-    localStorage.setItem(`milestones_${name}`, JSON.stringify(updated));
-    setNewMilestone({ goal: '', target: '', deadline: '' });
-    setShowMilestoneModal(false);
-    confetti();
-  };
-
-  const addMoodEntry = () => {
-    if (!currentMood.subject) {
-      alert("Please select a subject! 😊");
-      return;
-    }
-    
-    const entry = {
-      date: new Date().toISOString(),
-      mood: currentMood.mood,
-      subject: currentMood.subject,
-      credits: sc
-    };
-    
-    const updated = [...moodHistory, entry];
-    setMoodHistory(updated);
-    localStorage.setItem(`mood_history_${name}`, JSON.stringify(updated));
-    setShowMoodModal(false);
-    addSC(10);
-  };
-
-  const addPastPaper = () => {
-    if (!newPaper.subject || !newPaper.year || !newPaper.score) {
-      alert("Please fill required fields! 📝");
-      return;
-    }
-    
-    const paper = {
-      id: Date.now().toString(),
-      subject: newPaper.subject,
-      year: newPaper.year,
-      score: Number(newPaper.score),
-      date: new Date().toLocaleDateString(),
-      timeSpent: Number(newPaper.timeSpent) || 180
-    };
-    
-    const updated = [...pastPapers, paper];
-    setPastPapers(updated);
-    localStorage.setItem(`past_papers_${name}`, JSON.stringify(updated));
-    setNewPaper({ subject: '', year: '', score: '', timeSpent: '' });
-    setShowPaperModal(false);
-    
-    // Bonus for completing on time
-    if (paper.timeSpent <= 180) {
-      addSC(20);
-    }
-  };
-
-  const canClaimBonus = () => {
-    const today = new Date().toDateString();
-    return lastClaimDate !== today;
-  };
-
-  const claimDailyBonus = () => {
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    
-    let newStreak = dailyStreak;
-    if (lastClaimDate === yesterday) {
-      newStreak = dailyStreak + 1;
-    } else if (lastClaimDate !== today) {
-      newStreak = 1;
-    }
-    
-    const bonusAmount = 50 + (newStreak * 10);
-    addSC(bonusAmount);
-    
-    setDailyStreak(newStreak);
-    setLastClaimDate(today);
-    localStorage.setItem(`daily_streak_${name}`, newStreak.toString());
-    localStorage.setItem(`last_claim_${name}`, today);
-    
-    setShowBonusModal(false);
-  };
-
-  const addExamMark = () => {
-    if (!selectedSubject || !newMark) return;
-    
-    const mark = parseFloat(newMark);
-    if (isNaN(mark) || mark < 0 || mark > 100) {
-      alert("Please enter a valid mark between 0 and 100! 📝");
-      return;
-    }
-    
-    const updated = {
-      ...examMarks,
-      [selectedSubject]: [...(examMarks[selectedSubject] || []), mark]
-    };
-    
-    setExamMarks(updated);
-    localStorage.setItem(`exam_marks_${name}`, JSON.stringify(updated));
-    setShowAddMarkModal(false);
-    setNewMark("");
-    confetti();
-  };
-
-  const getSubjectAverage = (subjectId: string) => {
-    const marks = examMarks[subjectId] || [];
-    if (marks.length === 0) return 0;
-    return marks.reduce((a, b) => a + b, 0) / marks.length;
-  };
-
-  const getOverallAverage = () => {
-    const allMarks = Object.values(examMarks).flat();
-    if (allMarks.length === 0) return 0;
-    return allMarks.reduce((a, b) => a + b, 0) / allMarks.length;
-  };
-
-  const getPrediction = () => {
-    const totalTopics = Object.keys(SYLLABUS).reduce((sum, key) => {
-      const subject = SYLLABUS[key as keyof typeof SYLLABUS];
-      return sum + subject.chapters.reduce((s, ch) => s + ch.topics.length, 0);
-    }, 0);
-    
-    const completedCount = Object.values(completedTopics).flat().length;
-    const percentComplete = (completedCount / totalTopics) * 100;
-    
-    const daysLeft = Math.floor((EXAM_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    const topicsPerDay = completedCount / Math.max(1, 365 - daysLeft);
-    const remainingTopics = totalTopics - completedCount;
-    const daysNeeded = remainingTopics / Math.max(topicsPerDay, 0.1);
-    
-    return {
-      percentComplete,
-      onTrack: daysNeeded <= daysLeft,
-      daysNeeded: Math.ceil(daysNeeded),
-      daysLeft
-    };
-  };
-
-  const getWeakAreas = () => {
-    return Object.keys(examMarks).filter(k => {
-      const avg = getSubjectAverage(k);
-      return avg > 0 && avg < 70;
-    });
-  };
-
-  const exportReport = () => {
-    const pred = getPrediction();
-    const report = {
-      generatedAt: new Date().toLocaleString(),
-      studentName: name,
-      totalCredits: sc,
-      totalStudyHours: (totalSeconds / 3600).toFixed(1),
-      dailyStreak: dailyStreak,
-      
-      examPerformance: {
-        overallAverage: getOverallAverage().toFixed(1),
-        subjectAverages: SUBJECTS.map(s => ({
-          subject: s.name,
-          average: getSubjectAverage(s.id).toFixed(1)
-        }))
-      },
-      
-      syllabusProgress: Object.keys(SYLLABUS).map(key => ({
-        subject: SYLLABUS[key as keyof typeof SYLLABUS].name,
-        progressPercent: getTopicProgress(key).toFixed(1),
-        completedTopics: (completedTopics[key] || []).length
-      })),
-      
-      weakAreas: getWeakAreas().map(id => 
-        SUBJECTS.find(s => s.id === id)?.name || id
-      ),
-      
-      prediction: {
-        syllabusComplete: pred.percentComplete.toFixed(1) + '%',
-        onTrack: pred.onTrack ? 'YES ✅' : 'NO ⚠️',
-        daysRemaining: pred.daysLeft,
-        daysNeeded: pred.daysNeeded
-      },
-      
-      pastPapers: pastPapers.length,
-      moodEntries: moodHistory.length,
-      milestonesCompleted: milestones.filter(m => m.completed).length,
-      unlockedBadges: unlockedBadges.length
-    };
-    
-    const dataStr = "SCHOLAR OS - PROGRESS REPORT\n" + 
-                   "=" + "=".repeat(50) + "\n\n" +
-                   JSON.stringify(report, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'text/plain' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ScholarOS_Report_${Date.now()}.txt`;
-    link.click();
-    
-    alert("📥 Report downloaded! You can convert this to PDF using any online converter.");
-  };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      const wasPlaying = isPlaying;
-      audioRef.current.pause();
-      audioRef.current.src = LOFI_LIBRARY[currentTrackIdx].url;
-      if (wasPlaying) {
-        audioRef.current.play().catch(e => console.log("Audio autoplay blocked:", e));
-      }
-    }
-  }, [currentTrackIdx]);
-
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) { 
-      audioRef.current.pause(); 
-      setIsPlaying(false); 
-    } else { 
-      audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(e => {
-          console.log("Audio play blocked:", e);
-          alert("Please click again to enable audio 🔊");
-        });
-    }
-  };
-
-  useEffect(() => {
-    let interval: any;
+    let interval: NodeJS.Timeout;
     if (isActive) {
       interval = setInterval(() => {
-        setTotalSeconds(s => {
-            const next = s + 1;
-            localStorage.setItem(`total_secs_${name}`, next.toString());
-            return next;
-        });
-
         if (focusMode === 'timer') {
-          if (timeLeft > 0) setTimeLeft(t => t - 1);
-          else { 
-            setIsActive(false); 
-            addSC(50); 
-            confetti(); 
-          }
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              setIsActive(false);
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+              return 0;
+            }
+            return prev - 1;
+          });
         } else {
-          setStopwatchTime(s => s + 1);
+          setStopwatchTime(prev => prev + 1);
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, focusMode, timeLeft, stopwatchTime]);
+  }, [isActive, focusMode]);
 
-  const addSC = (amount: number) => {
-    const total = sc + amount;
-    setSc(total);
-    localStorage.setItem(`sc_${name}`, total.toString());
-    confetti();
-  };
+  // Simulator timer
+  useEffect(() => {
+    let simInterval: NodeJS.Timeout;
+    if (simActive && simMode) {
+      simInterval = setInterval(() => {
+        setSimTime(prev => {
+          if (prev <= 1) {
+            setSimActive(false);
+            confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(simInterval);
+  }, [simActive, simMode]);
 
-  const buyItem = (cost: number, id: string, type: 'track' | 'virtual' | 'real' | 'theme') => {
-    if (sc >= cost) {
-      setSc(s => {
-        const newAmount = s - cost;
-        localStorage.setItem(`sc_${name}`, newAmount.toString());
-        return newAmount;
-      });
-      
-      if (type === 'track') {
-        const up = [...unlockedTracks, id];
-        setUnlockedTracks(up);
-        localStorage.setItem(`tracks_${name}`, JSON.stringify(up));
-      } else if (type === 'theme') {
-        const up = [...unlockedThemes, id];
-        setUnlockedThemes(up);
-        localStorage.setItem(`themes_${name}`, JSON.stringify(up));
+  // Pomodoro auto-switch
+  useEffect(() => {
+    if (focusMode === 'timer' && timeLeft === 0 && isActive) {
+      // Pomodoro cycle complete
+      if (pomodoroPhase === 'work') {
+        const newCycle = pomodoroCycle + 1;
+        setPomodoroCycle(newCycle);
+        
+        if (newCycle % pomodoroSettings.cycles === 0) {
+          // Long break
+          setPomodoroPhase('long');
+          setTimeLeft(pomodoroSettings.longBreak * 60);
+        } else {
+          // Short break
+          setPomodoroPhase('short');
+          setTimeLeft(pomodoroSettings.shortBreak * 60);
+        }
       } else {
-        const up = [...unlockedRewards, id];
-        setUnlockedRewards(up);
-        localStorage.setItem(`rewards_${name}`, JSON.stringify(up));
+        // Back to work
+        setPomodoroPhase('work');
+        setTimeLeft(pomodoroSettings.workTime * 60);
       }
-      confetti();
-    } else { 
-      alert("Insufficient Credits! 💎"); 
+      
+      setIsActive(false);
+    }
+  }, [timeLeft, isActive, focusMode, pomodoroPhase, pomodoroCycle, pomodoroSettings]);
+
+  const claimTask = (credits: number) => {
+    setSc(prev => prev + credits);
+    setTotalSeconds(prev => prev + 3600);
+    confetti({ particleCount: 50, spread: 60 });
+    
+    // Check for unlock
+    const newSc = sc + credits;
+    const checkpoints = [100, 300, 500, 1000, 2000, 3000, 5000];
+    const nextUnlock = checkpoints.find(cp => newSc >= cp && sc < cp);
+    
+    if (nextUnlock && nextUnlock !== lastUnlockAt) {
+      setLastUnlockAt(nextUnlock);
+      setCurrentQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
+      setShowMotivation(true);
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
   };
 
-// Add AFTER buyItem function:
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-  const saveCurrentTimer = () => {
-    const timerName = prompt("Enter timer name:");
-    if (!timerName) return;
+  const totalHours = (totalSeconds / 3600).toFixed(1);
+
+  const buyItem = (cost: number, itemId: string, type: 'theme' | 'track' | 'reward' | 'badge' | 'virtual') => {
+    if (sc >= cost) {
+      setSc(prev => prev - cost);
+      
+      if (type === 'theme') {
+        setUnlockedThemes(prev => [...prev, itemId]);
+        setCurrentTheme(itemId);
+      } else if (type === 'track') {
+        setUnlockedTracks(prev => [...prev, itemId]);
+      } else if (type === 'reward' || type === 'virtual') {
+        setUnlockedRewards(prev => [...prev, itemId]);
+      } else if (type === 'badge') {
+        setUnlockedBadges(prev => [...prev, itemId]);
+      }
+      
+      confetti({ particleCount: 100, spread: 70 });
+    } else {
+      alert(`Need ${cost - sc} more SC! 💎`);
+    }
+  };
+
+  const toggleTopic = (subjectId: string, topic: string) => {
+    setCompletedTopics(prev => {
+      const current = prev[subjectId] || [];
+      const isCompleted = current.includes(topic);
+      
+      if (isCompleted) {
+        return { ...prev, [subjectId]: current.filter(t => t !== topic) };
+      } else {
+        claimTask(5);
+        return { ...prev, [subjectId]: [...current, topic] };
+      }
+    });
+  };
+
+  const addMilestone = () => {
+    if (newMilestone.goal && newMilestone.target && newMilestone.deadline) {
+      const milestone = {
+        id: Date.now().toString(),
+        goal: newMilestone.goal,
+        target: parseInt(newMilestone.target),
+        deadline: newMilestone.deadline,
+        completed: false
+      };
+      setMilestones(prev => [...prev, milestone]);
+      setNewMilestone({ goal: '', target: '', deadline: '' });
+      setShowNewMilestone(false);
+      claimTask(10);
+    }
+  };
+
+  const toggleMilestone = (id: string) => {
+    setMilestones(prev => prev.map(m => {
+      if (m.id === id) {
+        if (!m.completed) claimTask(m.target);
+        return { ...m, completed: !m.completed };
+      }
+      return m;
+    }));
+  };
+
+  const addMoodLog = () => {
+    if (moodSubject && moodCredits) {
+      const log = {
+        date: new Date().toLocaleDateString(),
+        mood: currentMood,
+        subject: moodSubject,
+        credits: parseInt(moodCredits)
+      };
+      setMoodHistory(prev => [...prev, log]);
+      setMoodSubject('');
+      setMoodCredits('');
+      setShowMoodLog(false);
+      claimTask(5);
+    }
+  };
+
+  const addPastPaper = () => {
+    if (newPaper.subject && newPaper.year && newPaper.score && newPaper.timeSpent) {
+      const paper = {
+        id: Date.now().toString(),
+        subject: newPaper.subject,
+        year: newPaper.year,
+        score: parseInt(newPaper.score),
+        date: new Date().toLocaleDateString(),
+        timeSpent: parseInt(newPaper.timeSpent)
+      };
+      setPastPapers(prev => [...prev, paper]);
+      setNewPaper({ subject: '', year: '', score: '', timeSpent: '' });
+      setShowPaperModal(false);
+      claimTask(parseInt(newPaper.score) / 2);
+    }
+  };
+
+  const claimDailyBonus = () => {
+    const today = new Date().toDateString();
+    if (lastClaimDate !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const newStreak = lastClaimDate === yesterday ? dailyStreak + 1 : 1;
+      setDailyStreak(newStreak);
+      setLastClaimDate(today);
+      
+      const bonus = 50 + (newStreak * 10);
+      claimTask(bonus);
+      setShowBonusModal(false);
+      confetti({ particleCount: 100, spread: 70 });
+    }
+  };
+
+  const addExamMark = () => {
+    if (selectedSubject && newMark) {
+      setExamMarks(prev => ({
+        ...prev,
+        [selectedSubject]: [...(prev[selectedSubject] || []), parseInt(newMark)]
+      }));
+      setNewMark('');
+      setShowAddMarkModal(false);
+      claimTask(parseInt(newMark) / 2);
+    }
+  };
+
+  const exportReport = () => {
+    const report = {
+      name,
+      sc,
+      totalHours,
+      dailyStreak,
+      completedTopics,
+      milestones,
+      moodHistory,
+      pastPapers,
+      examMarks,
+      unlockedRewards,
+      unlockedBadges,
+      date: new Date().toLocaleDateString()
+    };
     
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ScholarOS_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+    a.click();
+  };
+
+  // Audio Controls
+  const playTrack = (idx: number) => {
+    setCurrentTrackIdx(idx);
+    setIsPlaying(true);
+    if (audioRef.current) {
+      audioRef.current.src = LOFI_LIBRARY.find(t => unlockedTracks.includes(t.id))?.url || LOFI_LIBRARY[0].url;
+      audioRef.current.play();
+    }
+  };
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const nextTrack = () => {
+    const unlockedList = LOFI_LIBRARY.filter(t => unlockedTracks.includes(t.id));
+    const nextIdx = (currentTrackIdx + 1) % unlockedList.length;
+    playTrack(nextIdx);
+  };
+
+  const prevTrack = () => {
+    const unlockedList = LOFI_LIBRARY.filter(t => unlockedTracks.includes(t.id));
+    const prevIdx = (currentTrackIdx - 1 + unlockedList.length) % unlockedList.length;
+    playTrack(prevIdx);
+  };
+
+  // NEW FEATURE: Save Timer
+  const saveCurrentTimer = () => {
+    setShowSaveTimerModal(true);
+  };
+
+  const confirmSaveTimer = () => {
+    if (!timerName.trim()) {
+      alert("Please enter a timer name!");
+      return;
+    }
+
     const timer = {
       id: Date.now().toString(),
       name: timerName,
@@ -770,9 +736,9 @@ export default function ScholarOS() {
       type: focusMode
     };
     
-    const updated = [...savedTimers, timer];
-    setSavedTimers(updated);
-    localStorage.setItem(`saved_timers_${name}`, JSON.stringify(updated));
+    setSavedTimers(prev => [...prev, timer]);
+    setTimerName("");
+    setShowSaveTimerModal(false);
     alert("Timer saved! 💾");
   };
 
@@ -786,66 +752,51 @@ export default function ScholarOS() {
     setIsActive(false);
   };
 
-  const savePomodoroSettings = () => {
-    localStorage.setItem(`pomodoro_settings_${name}`, JSON.stringify(pomodoroSettings));
-    setShowPomodoroCustomizer(false);
-    alert("Pomodoro settings saved! 🍅");
+  const deleteSavedTimer = (timerId: string) => {
+    setSavedTimers(prev => prev.filter(t => t.id !== timerId));
   };
 
-  const syncDataToCloud = async () => {
-  alert("Cloud sync coming soon! 🚧 For now, data is saved locally.");
-};
+  // Calculate subject progress
+  const getSubjectProgress = (subjectId: string) => {
+    const subject = SYLLABUS[subjectId as keyof typeof SYLLABUS];
+    if (!subject) return 0;
     
-    alert("Syncing to cloud... ☁️");
-    // Sync logic handled by tRPC - see setup guide
+    const totalTopics = subject.chapters.reduce((acc, ch) => acc + ch.topics.length, 0);
+    const completed = completedTopics[subjectId]?.length || 0;
+    
+    return Math.round((completed / totalTopics) * 100);
   };
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const totalHours = (totalSeconds / 3600).toFixed(1);
+  const themeColors = THEMES.find(t => t.id === currentTheme)?.colors || THEMES[0].colors;
 
   return (
-    <div className={`min-h-screen ${isGhostMode ? 'bg-black' : 'bg-[#01040a]'} text-white font-sans flex flex-col lg:flex-row overflow-hidden relative transition-colors duration-500`}>
-      
-      {/* Animated Background */}
+    <div 
+      className="min-h-screen text-white font-sans flex flex-col lg:flex-row overflow-hidden relative transition-colors duration-500"
+      style={{ 
+        backgroundColor: themeColors.bg,
+        background: `linear-gradient(135deg, ${themeColors.bg} 0%, ${themeColors.bg}dd 100%)`
+      }}
+    >
       <LiquidGlassBubbles />
       
-      {/* 🧊 RESPONSIVE NAV */}
-      <nav className="w-full lg:w-24 xl:w-72 bg-white/5 border-b lg:border-b-0 lg:border-r border-white/10 p-4 lg:p-6 flex lg:flex-col items-center justify-between lg:justify-start gap-3 lg:gap-4 z-[100] backdrop-blur-2xl relative overflow-x-auto lg:overflow-visible">
-        <div className="w-10 h-10 lg:w-16 lg:h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 flex-shrink-0">
-          <GraduationCap size={32} className="w-6 h-6 lg:w-8 lg:h-8"/>
+      <audio ref={audioRef} loop />
+
+      {/* 🎯 SIDEBAR NAV */}
+      <nav className="lg:w-24 xl:w-32 bg-black/40 backdrop-blur-xl border-r border-white/5 flex lg:flex-col justify-around lg:justify-start items-center p-3 lg:p-6 gap-3 lg:gap-6 z-50 sticky top-0 lg:relative">
+        <div className="hidden lg:block text-center mb-8">
+          <h1 className="text-2xl xl:text-3xl font-black">🎓</h1>
+          <p className="text-[7px] xl:text-[8px] font-black text-blue-500/60 uppercase tracking-widest mt-2">Scholar OS</p>
         </div>
 
-        <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible no-scrollbar">
-          <NavBtn icon={<Home size={16}/>} active={activeTab==='home'} onClick={()=>setActiveTab('home')} label="Home"/>
-          <NavBtn icon={<Timer size={16}/>} active={activeTab==='focus'} onClick={()=>setActiveTab('focus')} label="Focus"/>
-          <NavBtn icon={<CheckSquare size={16}/>} active={activeTab==='syllabus'} onClick={()=>setActiveTab('syllabus')} label="Syllabus"/>
-          <NavBtn icon={<BookOpen size={16}/>} active={activeTab==='subjects'} onClick={()=>setActiveTab('subjects')} label="Exams"/>
-          <NavBtn icon={<TargetIcon size={16}/>} active={activeTab==='milestones'} onClick={()=>setActiveTab('milestones')} label="Goals"/>
-          <NavBtn icon={<Smile size={16}/>} active={activeTab==='mood'} onClick={()=>setActiveTab('mood')} label="Mood"/>
-          <NavBtn icon={<BarChart3 size={16}/>} active={activeTab==='analytics'} onClick={()=>setActiveTab('analytics')} label="Stats"/>
-          <NavBtn icon={<Rocket size={16}/>} active={activeTab==='advanced'} onClick={()=>setActiveTab('advanced')} label="Advanced"/>
-          <NavBtn icon={<Radio size={16}/>} active={activeTab==='audio'} onClick={()=>setActiveTab('audio')} label="Audio"/>
-          <NavBtn icon={<ShoppingCart size={16}/>} active={activeTab==='store'} onClick={()=>setActiveTab('store')} label="Store"/>
-        </div>
-        
-        {/* Daily Bonus Button */}
-        {canClaimBonus() && (
-          <motion.button 
-            onClick={()=>setShowBonusModal(true)}
-            className="hidden lg:flex mt-auto p-3 lg:p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl transition-all items-center gap-3 shadow-lg shadow-amber-500/30 flex-shrink-0"
-            animate={{scale: [1, 1.05, 1]}}
-            transition={{repeat: Infinity, duration: 2}}
-          >
-            <Gift size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">BONUS</span>
-          </motion.button>
-        )}
-        // Before Ghost button in nav, ADD:
+        <NavBtn icon={<Home size={18}/>} active={activeTab === 'home'} onClick={() => setActiveTab('home')} label="Home" />
+        <NavBtn icon={<Target size={18}/>} active={activeTab === 'milestones'} onClick={() => setActiveTab('milestones')} label="Goals" />
+        <NavBtn icon={<BookOpen size={18}/>} active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} label="Syllabus" />
+        <NavBtn icon={<BarChart3 size={18}/>} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} label="Stats" />
+        <NavBtn icon={<Timer size={18}/>} active={activeTab === 'focus'} onClick={() => setActiveTab('focus')} label="Focus" />
+        <NavBtn icon={<Music size={18}/>} active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Audio" />
+        <NavBtn icon={<ShoppingCart size={18}/>} active={activeTab === 'store'} onClick={() => setActiveTab('store')} label="Store" />
+        <NavBtn icon={<Smile size={18}/>} active={activeTab === 'mood'} onClick={() => setActiveTab('mood')} label="Mood" />
+        <NavBtn icon={<Settings size={18}/>} active={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} label="Advanced" />
 
         <button 
           onClick={() => setShowThemeCustomizer(true)}
@@ -853,77 +804,64 @@ export default function ScholarOS() {
         >
           <Palette size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">THEME</span>
         </button>
-        <button onClick={()=>setIsGhostMode(true)} className="hidden lg:flex mt-2 p-3 lg:p-4 text-purple-400 hover:bg-purple-500/10 rounded-2xl transition-all items-center gap-3 flex-shrink-0">
+
+        <button 
+          onClick={() => setIsGhostMode(true)} 
+          className="hidden lg:flex p-3 lg:p-4 text-slate-600 hover:text-white hover:bg-white/5 rounded-2xl transition-all items-center gap-3 flex-shrink-0"
+        >
           <Ghost size={18}/> <span className="hidden xl:block text-[9px] font-black tracking-widest">GHOST</span>
         </button>
       </nav>
 
-      {/* 📺 MAIN WORKSPACE */}
-      <main className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-12 pb-24 lg:pb-12 relative z-10">
-        <AnimatePresence mode="wait">
-          
-          {/* 🏠 TERMINAL */}
-          {activeTab === 'home' && (
-            <motion.div key="h" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
-              // Around line 750-800, UPDATE header to include login:
+      {/* 📱 MAIN CONTENT */}
+      <main className="flex-1 overflow-y-auto p-4 lg:p-8 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-8">
 
+          {/* 🏠 HOME TAB */}
+          {activeTab === 'home' && (
+            <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="space-y-8">
               <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
-                <div>
-                  <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
-                  <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
-                    <div className="text-right">
-                      <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Credits</p>
-                    </div>
-                    <div className="text-right border-l border-white/10 pl-8">
-                      <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Study Time</p>
-                    </div>
-                    {dailyStreak > 0 && (
-                      <div className="text-right border-l border-white/10 pl-8">
-                        <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Streak</p>
-                      </div>
-                    )}
+                <div className="flex items-center gap-6">
+                  <div>
+                    <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
+                    <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
                   </div>
 
-                  {/* Login/Profile Section */}
-                  {!session ? (
-                    <button 
-                      onClick={() => signIn()}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-black uppercase text-sm"
-                    >
-                      Login 🔐
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-black">
-                          {session.user?.name?.[0] || 'S'}
-                        </div>
-                        {dailyBadge.show && (
-                          <motion.div
-                            initial={{scale: 0, rotate: -180}}
-                            animate={{scale: 1, rotate: 0}}
-                            className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-black px-2 py-1 rounded-full"
-                          >
-                            {dailyBadge.badge} 🎖️
-                          </motion.div>
-                        )}
-                      </div>
-                      <button onClick={syncDataToCloud} className="p-3 bg-blue-600 rounded-xl hover:bg-blue-500">☁️</button>
-                      <button onClick={() => signOut()} className="p-3 bg-red-600 rounded-xl hover:bg-red-500">→</button>
-                    </div>
-                  )}
+                  {/* Daily Badge Display */}
+                  <AnimatePresence>
+                    {dailyBadge.show && (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: 180 }}
+                        className="relative"
+                      >
+                        <motion.div
+                          animate={{ 
+                            y: [0, -10, 0],
+                            rotate: [0, 5, -5, 0]
+                          }}
+                          transition={{ 
+                            repeat: Infinity, 
+                            duration: 2,
+                            ease: "easeInOut"
+                          }}
+                          className="bg-gradient-to-br from-amber-500 to-orange-500 p-6 rounded-3xl shadow-2xl border-4 border-amber-400"
+                        >
+                          <div className="text-6xl mb-2">{dailyBadge.emoji}</div>
+                          <div className="text-white font-black text-lg">{dailyBadge.badge}</div>
+                          <div className="text-amber-200 text-xs font-bold">Day {dailyBadge.day} Streak!</div>
+                        </motion.div>
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                          className="absolute inset-0 bg-amber-500 rounded-3xl blur-xl -z-10"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </header>
-                <div>
-                  <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
-                  <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
-                </div>
+
                 <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
                   <div className="text-right">
                     <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
@@ -942,119 +880,151 @@ export default function ScholarOS() {
                 </div>
               </header>
 
-              {/* Countdown */}
-              <CountdownTimer />
-			  // After <CountdownTimer />, ADD:
-
-              {/* Daily Motivational Quote */}
-              <motion.div 
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 p-6 rounded-[2rem] text-center"
-              >
-                <p className="text-xl md:text-2xl font-black italic">"{dailyQuote}"</p>
-                <p className="text-xs text-slate-400 mt-3 uppercase tracking-widest">Daily Motivation 💪</p>
-              </motion.div>
-
-              <div className="space-y-12 pb-12">
-                <TaskGroup title="01. Core Grind">
-                  <TaskItem icon={<Clock/>} name="Deep Work Hour" sc={30} onClick={()=>addSC(30)}/>
-                  <TaskItem icon={<RotateCcw/>} name="Pomodoro Streak" sc={50} onClick={()=>addSC(50)}/>
-                  <TaskItem icon={<GraduationCap/>} name="Syllabus Progress" sc={40} onClick={()=>addSC(40)}/>
-                  <TaskItem icon={<Edit3/>} name="Ultra-Summary (1-Page)" sc={35} onClick={()=>addSC(35)}/>
-                  <TaskItem icon={<Layout/>} name="The Clean Slate" sc={15} onClick={()=>addSC(15)}/>
-                  <TaskItem icon={<Calendar/>} name="End-of-Day Review" sc={20} onClick={()=>addSC(20)}/>
-                </TaskGroup>
-
-                <TaskGroup title="02. Subject Power Plays">
-                  <TaskItem icon={<Binary/>} name="Maths: Proof Mastery" sc={30} onClick={()=>addSC(30)}/>
-                  <TaskItem icon={<Calculator/>} name="Maths: The Long Game" sc={25} onClick={()=>addSC(25)}/>
-                  <TaskItem icon={<Target/>} name="Maths: Pattern Recognition" sc={20} onClick={()=>addSC(20)}/>
-                  <TaskItem icon={<Microscope/>} name="Physics: Lab Report" sc={35} onClick={()=>addSC(35)}/>
-                  <TaskItem icon={<Wand2/>} name="Physics: The Architect" sc={30} onClick={()=>addSC(30)}/>
-                  <TaskItem icon={<Palette/>} name="Physics: The Visualizer" sc={15} onClick={()=>addSC(15)}/>
-                  <TaskItem icon={<Brain/>} name="Chem: The Alchemist" sc={30} onClick={()=>addSC(30)}/>
-                  <TaskItem icon={<Beaker/>} name="Chem: Color Guru" sc={25} onClick={()=>addSC(25)}/>
-                  <TaskItem icon={<Zap/>} name="Chem: The Balancer" sc={20} onClick={()=>addSC(20)}/>
-                  <TaskItem icon={<FlaskConical/>} name="Chem: Stoichiometry Master" sc={20} onClick={()=>addSC(20)}/>
-                </TaskGroup>
-
-                <TaskGroup title="03. Bonus Multipliers">
-                  <TaskItem icon={<Star/>} name="The Early Bird" sc={40} onClick={()=>addSC(40)}/>
-                  <TaskItem icon={<GraduationCap/>} name="The Teacher (Feynman)" sc={50} onClick={()=>addSC(50)}/>
-                  <TaskItem icon={<Dumbbell/>} name="Physical Buff" sc={30} onClick={()=>addSC(30)}/>
-                  <TaskItem icon={<Smartphone/>} name="No-Phone Multiplier" sc={20} onClick={()=>addSC(20)}/>
-                  <TaskItem icon={<Apple/>} name="Nutrition Boost" sc={10} onClick={()=>addSC(10)}/>
-                </TaskGroup>
-
-                <TaskGroup title="04. Heroic Feats">
-                  <TaskItem icon={<Sword/>} name="The Full Mock (3HR)" sc={150} onClick={()=>addSC(150)} gold/>
-                  <TaskItem icon={<Target/>} name="The Weakness Slayer" sc={80} onClick={()=>addSC(80)}/>
-                  <TaskItem icon={<AlertCircle/>} name="The Error Log" sc={60} onClick={()=>addSC(60)}/>
-                  <TaskItem icon={<Trophy/>} name="Perfect Week Bonus" sc={250} onClick={()=>addSC(250)} gold/>
-                  <TaskItem icon={<Link/>} name="Inter-Subject Linkage" sc={70} onClick={()=>addSC(70)}/>
-                </TaskGroup>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 📚 SYLLABUS CHECKLIST */}
-          {activeTab === 'syllabus' && (
-            <motion.div key="syl" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-5xl font-black uppercase tracking-tighter">Syllabus Tracker 📋</h2>
-                  <p className="text-slate-400 text-sm mt-2">Check off topics as you master them (+5 SC each)</p>
-                </div>
-                <button onClick={exportReport} className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2">
-                  <Download size={20}/> Export Report
-                </button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <CountdownTimer />
+                
+                {/* Daily Motivational Quote */}
+                <motion.div 
+                  initial={{opacity: 0, y: 20}}
+                  animate={{opacity: 1, y: 0}}
+                  transition={{ delay: 0.2 }}
+                  className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 p-8 rounded-[2rem] flex flex-col justify-center"
+                >
+                  <div className="text-4xl mb-4 text-center">💪</div>
+                  <p className="text-xl md:text-2xl font-black italic text-center leading-relaxed">&ldquo;{dailyQuote}&rdquo;</p>
+                  <p className="text-xs text-slate-400 mt-4 uppercase tracking-widest text-center">Daily Motivation</p>
+                </motion.div>
               </div>
 
-              {/* Progress Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.keys(SYLLABUS).map(key => {
-                  const subject = SYLLABUS[key as keyof typeof SYLLABUS];
-                  const progress = getTopicProgress(key);
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {SUBJECTS.map((subj, idx) => {
+                  const progress = getSubjectProgress(subj.id);
                   return (
-                    <div key={key} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
-                      <p className="text-2xl mb-2">{SUBJECTS.find(s => s.id === key)?.emoji}</p>
-                      <p className="text-xs font-black uppercase tracking-tight mb-2">{subject.name}</p>
-                      <p className="text-3xl font-black font-mono">{progress.toFixed(0)}%</p>
-                    </div>
+                    <motion.div 
+                      key={subj.id}
+                      initial={{opacity: 0, scale: 0.9}}
+                      animate={{opacity: 1, scale: 1}}
+                      transition={{delay: idx * 0.1}}
+                      className="bg-white/5 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 hover:border-white/20 transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">{subj.emoji}</span>
+                          <div>
+                            <h3 className="text-sm font-black uppercase tracking-tight">{subj.name}</h3>
+                            <p className="text-[10px] text-slate-500 font-bold">{progress}% Complete</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{width: 0}} 
+                          animate={{width: `${progress}%`}}
+                          transition={{duration: 1, ease: "easeOut"}}
+                          className="h-full rounded-full"
+                          style={{backgroundColor: subj.color}}
+                        />
+                      </div>
+                    </motion.div>
                   );
                 })}
               </div>
 
-              {/* Syllabus by Subject */}
-              {Object.keys(SYLLABUS).map(subjectKey => {
-                const subject = SYLLABUS[subjectKey as keyof typeof SYLLABUS];
-                return (
-                  <div key={subjectKey} className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] space-y-6">
-                    <h3 className="text-2xl font-black uppercase flex items-center gap-3">
-                      <span>{SUBJECTS.find(s => s.id === subjectKey)?.emoji}</span>
-                      {subject.name}
-                    </h3>
-                    
+              <TaskGroup title="📚 Daily Tasks">
+                <TaskItem name="Complete 10 Topics" sc={50} icon={<CheckCircle/>} onClick={() => claimTask(50)} />
+                <TaskItem name="Study for 2 Hours" sc={100} icon={<Clock/>} onClick={() => claimTask(100)} />
+                <TaskItem name="Solve 5 Past Papers" sc={150} icon={<FileText/>} onClick={() => claimTask(150)} />
+                <TaskItem name="Daily Streak Bonus" sc={50 + (dailyStreak * 10)} icon={<Flame/>} onClick={() => setShowBonusModal(true)} gold />
+              </TaskGroup>
+
+              <TaskGroup title="⚡ Quick Actions">
+                <TaskItem name="Log Today's Mood" sc={20} icon={<Smile/>} onClick={() => setShowMoodLog(true)} />
+                <TaskItem name="Set New Milestone" sc={30} icon={<Target/>} onClick={() => setShowNewMilestone(true)} />
+                <TaskItem name="Add Past Paper Result" sc={25} icon={<Award/>} onClick={() => setShowPaperModal(true)} />
+                <TaskItem name="Export Progress Report" sc={0} icon={<Download/>} onClick={exportReport} />
+              </TaskGroup>
+            </motion.div>
+          )}
+
+          {/* 🎯 MILESTONES TAB */}
+          {activeTab === 'milestones' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black uppercase">🎯 Milestones</h2>
+                <button 
+                  onClick={() => setShowNewMilestone(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={16}/> New Goal
+                </button>
+              </div>
+
+              <div className="grid gap-6">
+                {milestones.map(milestone => (
+                  <motion.div 
+                    key={milestone.id}
+                    initial={{opacity: 0, x: -20}}
+                    animate={{opacity: 1, x: 0}}
+                    className={`p-6 rounded-[2rem] backdrop-blur-xl border ${milestone.completed ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/10'}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-black mb-2">{milestone.goal}</h3>
+                        <div className="flex gap-4 text-sm text-slate-400">
+                          <span>🎯 Target: {milestone.target} SC</span>
+                          <span>📅 Deadline: {milestone.deadline}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => toggleMilestone(milestone.id)}
+                        className={`px-6 py-3 rounded-xl font-black uppercase text-sm ${milestone.completed ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-500'}`}
+                      >
+                        {milestone.completed ? '✅ Done' : 'Complete'}
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {milestones.length === 0 && (
+                  <div className="text-center py-20 text-slate-500">
+                    <Target size={64} className="mx-auto mb-4 opacity-20"/>
+                    <p className="text-lg font-bold">No milestones yet. Create your first goal!</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 📚 SYLLABUS TAB */}
+          {activeTab === 'syllabus' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">📚 GCE A/L Syllabus</h2>
+
+              {Object.entries(SYLLABUS).map(([subjectId, subject]) => (
+                <div key={subjectId} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="text-4xl">{SUBJECTS.find(s => s.id === subjectId)?.emoji}</span>
+                    <h3 className="text-2xl font-black uppercase">{subject.name}</h3>
+                    <span className="ml-auto text-sm font-black text-blue-400">{getSubjectProgress(subjectId)}%</span>
+                  </div>
+
+                  <div className="space-y-6">
                     {subject.chapters.map(chapter => (
-                      <div key={chapter.id} className="space-y-3">
-                        <h4 className="text-sm font-black uppercase text-blue-400">{chapter.name}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {chapter.topics.map((topic, idx) => {
-                            const topicId = `${chapter.id}-${idx}`;
-                            const isCompleted = (completedTopics[subjectKey] || []).includes(`${subjectKey}-${topicId}`);
+                      <div key={chapter.id} className="bg-black/20 p-6 rounded-2xl">
+                        <h4 className="text-lg font-black mb-4 text-blue-400">{chapter.name}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {chapter.topics.map(topic => {
+                            const isCompleted = completedTopics[subjectId]?.includes(topic);
                             return (
                               <button
-                                key={idx}
-                                onClick={() => toggleTopicCompletion(subjectKey, topicId)}
-                                className={`p-4 rounded-xl border text-left flex items-center gap-3 transition-all ${
-                                  isCompleted 
-                                    ? 'bg-emerald-500/20 border-emerald-500/40' 
-                                    : 'bg-black/20 border-white/10 hover:border-white/20'
-                                }`}
+                                key={topic}
+                                onClick={() => toggleTopic(subjectId, topic)}
+                                className={`p-4 rounded-xl text-left transition-all ${isCompleted ? 'bg-emerald-500/20 border-2 border-emerald-500' : 'bg-white/5 border-2 border-transparent hover:border-white/20'}`}
                               >
-                                {isCompleted ? <CheckCircle size={18} className="text-emerald-400"/> : <Square size={18}/>}
-                                <span className="text-xs font-bold">{topic}</span>
+                                <div className="flex items-center gap-3">
+                                  {isCompleted ? <CheckCircle size={18} className="text-emerald-400"/> : <Square size={18} className="text-slate-600"/>}
+                                  <span className="text-sm font-bold">{topic}</span>
+                                </div>
                               </button>
                             );
                           })}
@@ -1062,464 +1032,250 @@ export default function ScholarOS() {
                       </div>
                     ))}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </motion.div>
           )}
 
-          {/* 🎯 MILESTONES */}
-          {activeTab === 'milestones' && (
-            <motion.div key="mil" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-5xl font-black uppercase tracking-tighter">Personal Milestones 🎯</h2>
-                  <p className="text-slate-400 text-sm mt-2">Set goals and track your progress</p>
-                </div>
-                <button 
-                  onClick={()=>setShowMilestoneModal(true)}
-                  className="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
-                >
-                  <Plus size={20}/> New Goal
-                </button>
-              </div>
+          {/* 📊 ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">📊 Analytics</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {milestones.map(milestone => (
-                  <div key={milestone.id} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-black uppercase text-lg">{milestone.goal}</h3>
-                        <p className="text-sm text-slate-400 mt-1">Target: {milestone.target} SC by {new Date(milestone.deadline).toLocaleDateString()}</p>
-                      </div>
-                      {milestone.completed && <CheckCircle className="text-emerald-400" size={24}/>}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span>Progress</span>
-                        <span className="font-black">{Math.min(100, (sc / milestone.target) * 100).toFixed(0)}%</span>
-                      </div>
-                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{width: 0}}
-                          animate={{width: `${Math.min(100, (sc / milestone.target) * 100)}%`}}
-                          className="h-full bg-purple-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    {!milestone.completed && sc >= milestone.target && (
-                      <button 
-                        onClick={() => {
-                          const updated = milestones.map(m => 
-                            m.id === milestone.id ? {...m, completed: true} : m
-                          );
-                          setMilestones(updated);
-                          localStorage.setItem(`milestones_${name}`, JSON.stringify(updated));
-                          addSC(100);
-                          confetti();
-                        }}
-                        className="w-full py-3 bg-emerald-600 rounded-xl font-black uppercase text-sm"
-                      >
-                        Complete Goal (+100 SC)
-                      </button>
-                    )}
-                  </div>
-                ))}
-                
-                {milestones.length === 0 && (
-                  <div className="col-span-2 text-center py-12 text-slate-500">
-                    <TargetIcon size={48} className="mx-auto mb-4 opacity-20"/>
-                    <p className="font-black uppercase">No goals yet. Create your first milestone!</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* 😊 MOOD TRACKER */}
-          {activeTab === 'mood' && (
-            <motion.div key="mood" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-8">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-5xl font-black uppercase tracking-tighter">Mood Tracker 😊</h2>
-                  <p className="text-slate-400 text-sm mt-2">Track your understanding and confidence</p>
-                </div>
-                <button 
-                  onClick={()=>setShowMoodModal(true)}
-                  className="px-8 py-4 bg-pink-600 hover:bg-pink-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
-                >
-                  <Plus size={20}/> Log Mood
-                </button>
-              </div>
-
-              {/* Mood History */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {moodHistory.slice(-12).reverse().map((entry, idx) => {
-                  const moodEmoji = entry.mood === 0 ? '😫' : entry.mood === 1 ? '😐' : entry.mood === 2 ? '😊' : '🤓';
-                  const moodLabel = entry.mood === 0 ? 'Confused' : entry.mood === 1 ? 'Learning' : entry.mood === 2 ? 'Got it' : 'Mastered';
-                  return (
-                    <div key={idx} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl">
-                      <p className="text-4xl mb-2">{moodEmoji}</p>
-                      <p className="font-black uppercase text-sm">{moodLabel}</p>
-                      <p className="text-xs text-slate-400 mt-1">{SUBJECTS.find(s => s.id === entry.subject)?.name}</p>
-                      <p className="text-xs text-slate-500 mt-2">{new Date(entry.date).toLocaleDateString()}</p>
-                    </div>
-                  );
-                })}
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10">
+                  <Trophy className="text-amber-400 mb-4" size={32}/>
+                  <p className="text-4xl font-mono font-black text-amber-400">{sc}</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Total Credits</p>
+                </div>
+
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10">
+                  <Clock className="text-blue-400 mb-4" size={32}/>
+                  <p className="text-4xl font-mono font-black text-blue-400">{totalHours}h</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Study Hours</p>
+                </div>
+
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10">
+                  <Flame className="text-orange-400 mb-4" size={32}/>
+                  <p className="text-4xl font-mono font-black text-orange-400">{dailyStreak}</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-2">Day Streak</p>
+                </div>
               </div>
 
-              {/* Mood Correlation */}
-              {moodHistory.length > 0 && (
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6">Mood vs Credits Correlation 📊</h3>
-                  <div className="h-48 flex items-end gap-2">
-                    {moodHistory.slice(-10).map((entry, idx) => {
-                      const height = (entry.mood / 3) * 100;
-                      return (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                          <motion.div 
-                            initial={{height: 0}}
-                            animate={{height: `${height}%`}}
-                            className="w-full bg-pink-500 rounded-t"
-                          />
-                          <span className="text-xs">{entry.mood === 0 ? '😫' : entry.mood === 1 ? '😐' : entry.mood === 2 ? '😊' : '🤓'}</span>
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                <h3 className="text-2xl font-black mb-6 uppercase">Subject Progress</h3>
+                <div className="space-y-6">
+                  {SUBJECTS.map(subj => (
+                    <SubjectBar 
+                      key={subj.id}
+                      label={`${subj.emoji} ${subj.name}`}
+                      percent={getSubjectProgress(subj.id)}
+                      color={`bg-gradient-to-r from-blue-500 to-purple-500`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {pastPapers.length > 0 && (
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                  <h3 className="text-2xl font-black mb-6 uppercase">📄 Past Paper Results</h3>
+                  <div className="space-y-4">
+                    {pastPapers.map(paper => (
+                      <div key={paper.id} className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
+                        <div>
+                          <p className="font-black">{paper.subject} - {paper.year}</p>
+                          <p className="text-xs text-slate-500">{paper.date}</p>
                         </div>
-                      );
-                    })}
+                        <div className="text-right">
+                          <p className="text-2xl font-mono font-black text-emerald-400">{paper.score}%</p>
+                          <p className="text-xs text-slate-500">{paper.timeSpent} mins</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* 🚀 ADVANCED ANALYTICS */}
-          {activeTab === 'advanced' && (
-            <motion.div key="adv" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
-              <h2 className="text-5xl font-black uppercase tracking-tighter">Advanced Analytics 🚀</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Radar Chart - Subject Strength */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Subject Strength Radar 📊</h3>
-                  <div className="relative w-full aspect-square max-w-sm mx-auto">
-                    <svg viewBox="0 0 200 200" className="w-full h-full">
-                      {[20, 40, 60, 80, 100].map(r => (
-                        <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
-                      ))}
-                      {SUBJECTS.slice(0, 4).map((_, i) => {
-                        const angle = (i * 90 - 90) * (Math.PI / 180);
-                        const x2 = 100 + 100 * Math.cos(angle);
-                        const y2 = 100 + 100 * Math.sin(angle);
-                        return <line key={i} x1="100" y1="100" x2={x2} y2={y2} stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>;
-                      })}
-                      <motion.polygon
-                        points={SUBJECTS.slice(0, 4).map((s, i) => {
-                          const progress = getTopicProgress(s.id);
-                          const angle = (i * 90 - 90) * (Math.PI / 180);
-                          const r = progress;
-                          const x = 100 + r * Math.cos(angle);
-                          const y = 100 + r * Math.sin(angle);
-                          return `${x},${y}`;
-                        }).join(' ')}
-                        fill="rgba(59, 130, 246, 0.3)"
-                        stroke="#3b82f6"
-                        strokeWidth="2"
-                        initial={{scale: 0}}
-                        animate={{scale: 1}}
-                      />
-                    </svg>
-                  </div>
-                  <div className="mt-6 grid grid-cols-2 gap-3 text-[10px] font-black">
-                    {SUBJECTS.slice(0, 4).map(s => (
-                      <div key={s.id} className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: s.color}}></div>
-                        <span>{s.name}</span>
-                      </div>
-                    ))}
-                  </div>
+          {/* ⏲️ FOCUS TAB */}
+          {activeTab === 'focus' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">⏲️ Focus Hub</h2>
+
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 max-w-2xl mx-auto">
+                <div className="flex justify-center gap-4 mb-8">
+                  <button 
+                    onClick={() => setFocusMode('timer')}
+                    className={`px-8 py-4 rounded-2xl font-black uppercase text-sm transition-all ${focusMode === 'timer' ? 'bg-blue-600' : 'bg-white/5'}`}
+                  >
+                    Timer ⏱️
+                  </button>
+                  <button 
+                    onClick={() => setFocusMode('stopwatch')}
+                    className={`px-8 py-4 rounded-2xl font-black uppercase text-sm transition-all ${focusMode === 'stopwatch' ? 'bg-purple-600' : 'bg-white/5'}`}
+                  >
+                    Stopwatch ⏲️
+                  </button>
                 </div>
 
-                {/* Prediction Model */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Completion Prediction 🎯</h3>
-                  {(() => {
-                    const pred = getPrediction();
-                    return (
-                      <div className="space-y-6">
-                        <div className="text-center">
-                          <p className="text-6xl font-black font-mono">{pred.percentComplete.toFixed(1)}%</p>
-                          <p className="text-xs text-slate-400 mt-2">SYLLABUS COMPLETE</p>
-                        </div>
-                        
-                        <div className={`p-6 rounded-2xl ${pred.onTrack ? 'bg-emerald-500/20 border border-emerald-500/40' : 'bg-red-500/20 border border-red-500/40'}`}>
-                          <p className="text-sm font-black uppercase mb-2">
-                            {pred.onTrack ? '✅ ON TRACK!' : '⚠️ FALLING BEHIND'}
-                          </p>
-                          <p className="text-xs">
-                            {pred.onTrack 
-                              ? `You're doing great! Keep this pace to finish ${pred.daysLeft - pred.daysNeeded} days early.`
-                              : `Speed up! You need ${pred.daysNeeded} days but only have ${pred.daysLeft} left.`
-                            }
-                          </p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs">
-                            <span>Days Left</span>
-                            <span className="font-black">{pred.daysLeft}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span>Days Needed (current pace)</span>
-                            <span className="font-black">{pred.daysNeeded}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Study Velocity */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Study Velocity 🚴</h3>
-                  <div className="text-center space-y-4">
-                    <p className="text-5xl font-black font-mono">{(Object.values(completedTopics).flat().length / 7).toFixed(1)}</p>
-                    <p className="text-xs text-slate-400">TOPICS / WEEK</p>
-                    <div className="h-24 flex items-end gap-2">
-                      {[3, 5, 7, 4, 8, 6, 9].map((h, i) => (
-                        <motion.div 
-                          key={i}
-                          initial={{height: 0}}
-                          animate={{height: `${h * 10}%`}}
-                          className="flex-1 bg-blue-500 rounded-t"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Credit ROI */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                  <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Credit ROI 💎</h3>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-5xl font-black font-mono">{totalSeconds > 0 ? (sc / parseFloat(totalHours)).toFixed(1) : '0'}</p>
-                      <p className="text-xs text-slate-400">SC / HOUR</p>
-                    </div>
-                    {SUBJECTS.slice(0, 4).map(s => (
-                      <div key={s.id} className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
-                        <span className="text-xs font-black">{s.emoji} {s.name}</span>
-                        <span className="text-sm font-black font-mono" style={{color: s.color}}>
-                          {(Math.random() * 50 + 30).toFixed(1)} SC/h
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Weak Areas */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] col-span-full">
-                  <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-6">🚩 Weak Areas (Score &lt; 70%)</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {getWeakAreas().map(subjectId => {
-                      const subject = SUBJECTS.find(s => s.id === subjectId);
-                      const avg = getSubjectAverage(subjectId);
-                      return (
-                        <div key={subjectId} className="bg-red-500/10 border border-red-500/30 p-6 rounded-2xl">
-                          <p className="text-3xl mb-2">{subject?.emoji}</p>
-                          <p className="font-black uppercase text-sm">{subject?.name}</p>
-                          <p className="text-2xl font-black font-mono text-red-400 mt-2">{avg.toFixed(1)}%</p>
-                          <p className="text-xs text-slate-400 mt-2">Focus needed</p>
-                        </div>
-                      );
-                    })}
-                    {getWeakAreas().length === 0 && (
-                      <div className="col-span-3 text-center py-8 text-emerald-400">
-                        <CheckCircle size={48} className="mx-auto mb-4"/>
-                        <p className="font-black uppercase">All subjects above 70%! 🎉</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Past Papers Tracker */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] col-span-full">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">📝 Past Paper Tracker</h3>
-                    <button 
-                      onClick={()=>setShowPaperModal(true)}
-                      className="px-6 py-3 bg-blue-600 rounded-xl font-black uppercase text-xs flex items-center gap-2"
-                    >
-                      <Plus size={16}/> Add Paper
-                    </button>
-                  </div>
-                  
-                  {pastPapers.length > 0 ? (
-                    <div className="space-y-4">
-                      {pastPapers.slice(-5).reverse().map(paper => (
-                        <div key={paper.id} className="bg-black/20 border border-white/10 p-4 rounded-xl flex justify-between items-center">
-                          <div>
-                            <p className="font-black uppercase text-sm">{SUBJECTS.find(s => s.id === paper.subject)?.name} - {paper.year}</p>
-                            <p className="text-xs text-slate-400">{paper.date} • {paper.timeSpent} mins</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-black font-mono" style={{color: paper.score >= 75 ? '#10b981' : paper.score >= 50 ? '#f59e0b' : '#ef4444'}}>
-                              {paper.score}%
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500">
-                      <FileText size={48} className="mx-auto mb-4 opacity-20"/>
-                      <p className="font-black uppercase">No past papers logged yet</p>
-                    </div>
+                <div className="text-center mb-8">
+                  <p className="text-8xl font-mono font-black tabular-nums">
+                    {focusMode === 'timer' ? formatTime(timeLeft) : formatTime(stopwatchTime)}
+                  </p>
+                  {pomodoroPhase !== 'work' && focusMode === 'timer' && (
+                    <p className="text-sm font-black text-emerald-400 mt-4 uppercase">
+                      {pomodoroPhase === 'short' ? '☕ Short Break' : '🎉 Long Break'} - Cycle {pomodoroCycle}
+                    </p>
                   )}
                 </div>
-              </div>
 
-              {/* Time Management Simulator */}
-              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/20 p-8 rounded-[2.5rem]">
-                <h3 className="text-2xl font-black uppercase mb-6">⏰ Time Management Simulator</h3>
-                <p className="text-sm mb-6">Practice completing a 3-hour mock exam. Finish on time for +100 SC bonus!</p>
-                
-                <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-6xl font-mono font-black">{formatTime(simTime)}</p>
-                    <p className="text-xs text-slate-400 mt-2">TIME REMAINING</p>
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => {
-                        if (!simActive) {
-                          setSimTime(10800);
-                          setSimActive(true);
-                        } else {
-                          setSimActive(false);
-                        }
-                      }}
-                      className="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm"
-                    >
-                      {simActive ? 'Pause' : 'Start Sim'}
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        if (simTime > 0) {
-                          addSC(100);
-                          alert("Completed on time! +100 SC 🎉");
-                        }
-                        setSimActive(false);
-                        setSimTime(10800);
-                      }}
-                      className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm"
-                    >
-                      Finish
-                    </button>
-                  </div>
+                <div className="flex justify-center gap-4 mb-8">
+                  <button 
+                    onClick={() => setIsActive(!isActive)}
+                    className="px-12 py-5 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-lg"
+                  >
+                    {isActive ? '⏸️ Pause' : '▶️ Start'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsActive(false);
+                      if (focusMode === 'timer') {
+                        setTimeLeft(pomodoroSettings.workTime * 60);
+                        setPomodoroPhase('work');
+                        setPomodoroCycle(0);
+                      } else {
+                        setStopwatchTime(0);
+                      }
+                    }}
+                    className="px-12 py-5 bg-red-600 hover:bg-red-500 rounded-2xl font-black uppercase text-lg"
+                  >
+                    ↻ Reset
+                  </button>
                 </div>
+
+                <div className="flex gap-4 justify-center">
+                  <button 
+                    onClick={() => setShowPomodoroCustomizer(true)}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm"
+                  >
+                    ⚙️ Pomodoro
+                  </button>
+                  
+                  <button 
+                    onClick={saveCurrentTimer}
+                    className="px-6 py-3 bg-amber-600 hover:bg-amber-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                  >
+                    <Save size={16}/> Save
+                  </button>
+                </div>
+
+                {/* Saved Timers List */}
+                {savedTimers.length > 0 && (
+                  <div className="mt-8 space-y-2">
+                    <h3 className="text-sm font-black uppercase text-center mb-4">💾 Saved Timers</h3>
+                    {savedTimers.map(timer => (
+                      <div
+                        key={timer.id}
+                        className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all"
+                      >
+                        <div className="flex-1">
+                          <p className="font-black">{timer.name}</p>
+                          <p className="text-xs text-slate-500">{timer.type === 'timer' ? '⏱️ Timer' : '⏲️ Stopwatch'}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="font-mono font-bold text-blue-400">{formatTime(timer.time)}</p>
+                          <button
+                            onClick={() => loadSavedTimer(timer)}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xs"
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => deleteSavedTimer(timer.id)}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-xl font-bold text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {focusMode === 'timer' && (
+                  <div className="mt-8 space-y-4">
+                    <h3 className="text-sm font-black uppercase text-center">⏱️ Quick Timers</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        { label: '5 min', time: 300 },
+                        { label: '15 min', time: 900 },
+                        { label: '25 min', time: 1500 },
+                        { label: '30 min', time: 1800 },
+                        { label: '45 min', time: 2700 },
+                        { label: '60 min', time: 3600 }
+                      ].map(preset => (
+                        <button
+                          key={preset.time}
+                          onClick={() => {
+                            setTimeLeft(preset.time);
+                            setIsActive(false);
+                          }}
+                          className="px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-sm"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
 
-          {/* 📚 SUBJECTS TAB */}
-          {activeTab === 'subjects' && (
-            <motion.div key="sub" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-5xl font-black uppercase tracking-tighter">Exam Analytics 📚</h2>
-                  <p className="text-slate-400 text-sm mt-2">Overall Average: <span className="text-emerald-400 font-black text-2xl">{getOverallAverage().toFixed(1)}%</span></p>
+          {/* 🎵 AUDIO TAB */}
+          {activeTab === 'audio' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">🎵 Audio Station</h2>
+
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <p className="text-6xl mb-4">🎧</p>
+                  <h3 className="text-2xl font-black mb-2">
+                    {LOFI_LIBRARY.filter(t => unlockedTracks.includes(t.id))[currentTrackIdx]?.name || 'No Track'}
+                  </h3>
+                  <p className="text-sm text-slate-500">Lofi Hip Hop Radio</p>
                 </div>
-                <button 
-                  onClick={()=>setShowAddMarkModal(true)}
-                  className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center gap-2"
-                >
-                  <Plus size={20}/> Add Mark
-                </button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {SUBJECTS.map(subject => {
-                  const marks = examMarks[subject.id] || [];
-                  const avg = getSubjectAverage(subject.id);
-                  const trend = marks.length >= 2 ? marks[marks.length - 1] - marks[marks.length - 2] : 0;
-                  
-                  return (
-                    <motion.div 
-                      key={subject.id}
-                      whileHover={{scale: 1.02}}
-                      className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] space-y-4"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-2xl mb-2">{subject.emoji}</p>
-                          <h3 className="text-sm font-black uppercase tracking-tight">{subject.name}</h3>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-black font-mono" style={{color: subject.color}}>
-                            {avg > 0 ? avg.toFixed(1) : '--'}
-                          </p>
-                          <p className="text-[8px] text-slate-500 font-black uppercase">Average</p>
-                        </div>
-                      </div>
-                      
-                      {marks.length > 0 && (
-                        <div className="h-20 flex items-end gap-1">
-                          {marks.slice(-10).map((mark, i) => (
-                            <div key={i} className="flex-1 relative group">
-                              <motion.div
-                                initial={{height: 0}}
-                                animate={{height: `${mark}%`}}
-                                className="absolute bottom-0 left-0 right-0 rounded-t"
-                                style={{backgroundColor: subject.color}}
-                              />
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[10px] font-black bg-black px-2 py-1 rounded whitespace-nowrap z-10">
-                                {mark}%
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between text-[10px] font-black">
-                        <span className="text-slate-500">Exams: {marks.length}</span>
-                        {trend !== 0 && (
-                          <span className={trend > 0 ? 'text-emerald-400' : 'text-red-400'}>
-                            {trend > 0 ? '↗' : '↘'} {Math.abs(trend).toFixed(1)}%
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                <div className="flex justify-center gap-4 mb-8">
+                  <button onClick={prevTrack} className="p-4 bg-white/5 hover:bg-white/10 rounded-full">
+                    <SkipBack size={24}/>
+                  </button>
+                  <button onClick={togglePlay} className="p-6 bg-blue-600 hover:bg-blue-500 rounded-full">
+                    {isPlaying ? <Pause size={32}/> : <Play size={32}/>}
+                  </button>
+                  <button onClick={nextTrack} className="p-4 bg-white/5 hover:bg-white/10 rounded-full">
+                    <SkipForward size={24}/>
+                  </button>
+                </div>
 
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] space-y-6">
-                <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Subject Comparison 📊</h3>
-                <div className="space-y-4">
-                  {SUBJECTS.map(subject => {
-                    const avg = getSubjectAverage(subject.id);
+                <div className="space-y-3">
+                  {LOFI_LIBRARY.map((track, idx) => {
+                    const unlocked = unlockedTracks.includes(track.id);
                     return (
-                      <div key={subject.id} className="space-y-2">
-                        <div className="flex justify-between text-[10px] font-black uppercase">
-                          <span className="flex items-center gap-2">
-                            <span>{subject.emoji}</span>
-                            {subject.name}
-                          </span>
-                          <span style={{color: subject.color}}>{avg > 0 ? avg.toFixed(1) : '0'}%</span>
+                      <button
+                        key={track.id}
+                        onClick={() => unlocked ? playTrack(idx) : buyItem(track.cost, track.id, 'track')}
+                        className={`w-full flex justify-between items-center p-4 rounded-xl transition-all ${unlocked ? 'bg-white/10 hover:bg-white/15' : 'bg-black/40 hover:bg-black/60'}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl">{track.emoji}</span>
+                          <span className="font-black text-sm">{track.name}</span>
                         </div>
-                        <div className="h-3 bg-white/5 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{width: 0}}
-                            animate={{width: `${avg}%`}}
-                            transition={{duration: 1, ease: "easeOut"}}
-                            className="h-full rounded-full"
-                            style={{backgroundColor: subject.color}}
-                          />
-                        </div>
-                      </div>
+                        <span className="text-xs font-black text-blue-400">
+                          {unlocked ? (currentTrackIdx === idx && isPlaying ? '🔊 Playing' : '✅ Owned') : `${track.cost} SC 🔒`}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
@@ -1527,742 +1283,205 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 📈 ANALYTICS */}
-          {activeTab === 'analytics' && (
-            <motion.div key="a" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} className="max-w-6xl mx-auto space-y-12">
-              <h2 className="text-5xl font-black uppercase tracking-tighter">Mastery Analysis 📊</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] min-h-[300px]">
-                   <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Subject Spread 🧬</p>
-                   <div className="space-y-6">
-                      <SubjectBar label="Combined Maths" percent={75} color="bg-blue-500" />
-                      <SubjectBar label="Physics" percent={60} color="bg-purple-500" />
-                      <SubjectBar label="Chemistry" percent={45} color="bg-emerald-500" />
-                   </div>
-                </div>
-
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col justify-between">
-                   <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Credit Velocity 📈</p>
-                   <div className="h-48 flex items-end gap-2 px-4">
-                      {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
-                        <div key={i} className="flex-1 bg-blue-600/20 rounded-t-lg relative group">
-                          <motion.div 
-                            initial={{height:0}} 
-                            animate={{height: `${h}%`}} 
-                            transition={{delay: i * 0.1, duration: 0.5}}
-                            className="absolute bottom-0 left-0 right-0 bg-blue-500 rounded-t-lg group-hover:bg-blue-400 transition-colors" 
-                          />
-                        </div>
-                      ))}
-                   </div>
-                   <div className="flex justify-between text-[8px] font-black text-slate-500 mt-4 uppercase">
-                      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                   </div>
-                </div>
-
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center justify-center">
-                   <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Study Distribution 🥧</p>
-                   <div className="relative w-48 h-48">
-                     <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                       <circle cx="50" cy="50" r="40" fill="none" stroke="#a855f7" strokeWidth="20" strokeDasharray="87.96 251.2" strokeDashoffset="0" />
-                       <circle cx="50" cy="50" r="40" fill="none" stroke="#3b82f6" strokeWidth="20" strokeDasharray="113.04 251.2" strokeDashoffset="-87.96" />
-                       <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" strokeDasharray="50.24 251.2" strokeDashoffset="-201" />
-                     </svg>
-                   </div>
-                   <div className="mt-6 space-y-2 text-[10px] font-black">
-                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> Maths 45%</div>
-                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-purple-500 rounded-full"></div> Physics 35%</div>
-                     <div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> Chemistry 20%</div>
-                   </div>
-                </div>
-
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                   <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-8">Weekly Trend 📉</p>
-                   <svg viewBox="0 0 200 100" className="w-full h-32">
-                     <motion.polyline
-                       points="10,80 40,60 70,70 100,40 130,50 160,20 190,30"
-                       fill="none"
-                       stroke="#3b82f6"
-                       strokeWidth="2"
-                       initial={{pathLength: 0}}
-                       animate={{pathLength: 1}}
-                       transition={{duration: 2}}
-                     />
-                     {[10, 40, 70, 100, 130, 160, 190].map((x, i) => {
-                       const y = [80, 60, 70, 40, 50, 20, 30][i];
-                       return (
-                         <motion.circle 
-                           key={i}
-                           cx={x} 
-                           cy={y} 
-                           r="3" 
-                           fill="#3b82f6"
-                           initial={{scale: 0}}
-                           animate={{scale: 1}}
-                           transition={{delay: i * 0.2}}
-                         />
-                       );
-                     })}
-                   </svg>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 📻 AUDIO */}
-          {activeTab === 'audio' && (
-            <motion.div key="au" initial={{opacity:0}} animate={{opacity:1}} className="max-w-4xl mx-auto space-y-12">
-              <div className="text-center">
-                <h2 className="text-5xl font-black uppercase tracking-tighter">Audio Station 📻</h2>
-                <p className="text-slate-500 text-[10px] font-black uppercase mt-2 tracking-widest">
-                  Selected: {LOFI_LIBRARY[currentTrackIdx].name} {LOFI_LIBRARY[currentTrackIdx].emoji}
-                </p>
-              </div>
-              
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] space-y-4">
-                {LOFI_LIBRARY.map((track, idx) => {
-                  const isUnlocked = unlockedTracks.includes(track.id);
-                  const isCurrent = currentTrackIdx === idx;
-                  return (
-                    <button 
-                      key={track.id} 
-                      onClick={() => {
-                        if (isUnlocked) {
-                          setCurrentTrackIdx(idx);
-                          if (!isPlaying) togglePlay();
-                        }
-                      }} 
-                      className={`w-full p-6 rounded-2xl border flex items-center justify-between transition-all ${
-                        isCurrent ? 'bg-blue-600 border-blue-400' : 'bg-black/20 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <motion.div
-                          animate={isPlaying && isCurrent ? { rotate: 360 } : { rotate: 0 }}
-                          transition={isPlaying && isCurrent ? { duration: 3, repeat: Infinity, ease: "linear" } : {}}
-                        >
-                          <Disc className="text-white" size={20}/>
-                        </motion.div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          {track.name} <span className="text-2xl ml-2">{track.emoji}</span>
-                        </span>
-                      </div>
-                      {isUnlocked ? (
-                         isCurrent && isPlaying ? <Pause size={18}/> : <Play size={18}/>
-                      ) : (
-                        <span className="text-[10px] font-black text-white/20">{track.cost} SC 💎</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <AnimatePresence>
-                {isPlaying && (
-                  <motion.div 
-                    initial={{y: 100, opacity: 0}}
-                    animate={{y: 0, opacity: 1}}
-                    exit={{y: 100, opacity: 0}}
-                    className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 rounded-full shadow-2xl flex items-center gap-6 z-[200]"
-                  >
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const prevIdx = (currentTrackIdx - 1 + LOFI_LIBRARY.length) % LOFI_LIBRARY.length;
-                        if (unlockedTracks.includes(LOFI_LIBRARY[prevIdx].id)) {
-                          setCurrentTrackIdx(prevIdx);
-                        }
-                      }}
-                      className="hover:scale-110 transition-transform"
-                    >
-                      <SkipBack size={20}/>
-                    </button>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        togglePlay();
-                      }} 
-                      className="p-3 bg-white text-blue-600 rounded-full hover:scale-110 transition-transform"
-                    >
-                      {isPlaying ? <Pause size={24}/> : <Play size={24}/>}
-                    </button>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const nextIdx = (currentTrackIdx + 1) % LOFI_LIBRARY.length;
-                        if (unlockedTracks.includes(LOFI_LIBRARY[nextIdx].id)) {
-                          setCurrentTrackIdx(nextIdx);
-                        }
-                      }}
-                      className="hover:scale-110 transition-transform"
-                    >
-                      <SkipForward size={20}/>
-                    </button>
-                    
-                    <div className="ml-4 text-xs font-black">
-                      <span className="text-2xl mr-2">{LOFI_LIBRARY[currentTrackIdx].emoji}</span>
-                      {LOFI_LIBRARY[currentTrackIdx].name}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-
-          {/* 🛒 THE VAULT */}
+          {/* 🛒 STORE TAB */}
           {activeTab === 'store' && (
-            <motion.div key="s" initial={{opacity:0}} animate={{opacity:1}} className="max-w-6xl mx-auto space-y-12">
-               <div className="text-center">
-                  <h2 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter">
-                    The Vault <span className="inline-block animate-pulse">🏛️</span>
-                  </h2>
-                  <p className="mt-4 text-emerald-400 font-mono text-2xl font-black">
-                    Balance: {sc} <span className="inline-block animate-bounce">💎</span>
-                  </p>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <StoreCard title={<>📻 Audio <motion.span animate={{rotate: [0, 10, -10, 0]}} transition={{repeat: Infinity, duration: 2}}>🎵</motion.span></>}>
-                    {LOFI_LIBRARY.slice(1).map(t => (
-                      <StoreItem 
-                        key={t.id} 
-                        name={
-                          <span className="flex items-center gap-2">
-                            <motion.span 
-                              animate={{scale: [1, 1.2, 1]}} 
-                              transition={{repeat: Infinity, duration: 1.5, delay: Math.random()}}
-                              className="text-lg"
-                            >
-                              {t.emoji}
-                            </motion.span>
-                            {t.name}
-                          </span>
-                        }
-                        cost={t.cost} 
-                        unlocked={unlockedTracks.includes(t.id)} 
-                        onClick={()=>buyItem(t.cost, t.id, 'track')} 
-                      />
-                    ))}
-                  </StoreCard>
-                  
-                  <StoreCard title={<>🎨 Themes <motion.span animate={{y: [0, -5, 0]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
-                    {THEMES.slice(1).map(t => (
-                      <StoreItem 
-                        key={t.id}
-                        name={
-                          <span className="flex items-center gap-2">
-                            <motion.span animate={{scale: [1, 1.2, 1]}} transition={{repeat: Infinity, duration: 2}} className="text-lg">🎨</motion.span>
-                            {t.name}
-                          </span>
-                        }
-                        cost={t.cost}
-                        unlocked={unlockedThemes.includes(t.id)}
-                        onClick={() => {
-                          if (!unlockedThemes.includes(t.id)) {
-                            buyItem(t.cost, t.id, 'theme');
-                          }
-                          setCurrentTheme(t.id);
-                          localStorage.setItem(`current_theme_${name}`, t.id);
-                        }}
-                      />
-                    ))}
-                  </StoreCard>
-                  
-                  <StoreCard title={<>☕ Rewards <motion.span animate={{scale: [1, 1.2, 1]}} transition={{repeat: Infinity, duration: 1.2}}>🎁</motion.span></>}>
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{y: [0, -3, 0]}} transition={{repeat: Infinity, duration: 1}} className="text-lg">☕</motion.span>
-                          Coffee Break
-                        </span>
-                      }
-                      cost={70} 
-                      onClick={()=>buyItem(70, 'r1', 'real')} 
-                    />
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{rotate: [0, 15, -15, 0]}} transition={{repeat: Infinity, duration: 1.5}} className="text-lg">🎮</motion.span>
-                          Gaming Hour
-                        </span>
-                      }
-                      cost={400} 
-                      onClick={()=>buyItem(400, 'r2', 'real')} 
-                    />
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{scale: [1, 1.1, 1]}} transition={{repeat: Infinity, duration: 1.3}} className="text-lg">🍕</motion.span>
-                          Cheat Meal
-                        </span>
-                      }
-                      cost={800} 
-                      onClick={()=>buyItem(800, 'r3', 'real')} 
-                    />
-                    <StoreItem 
-                      name={
-                        <span className="flex items-center gap-2">
-                          <motion.span animate={{x: [0, 5, -5, 0]}} transition={{repeat: Infinity, duration: 2}} className="text-lg">🛌</motion.span>
-                          Rest Day
-                        </span>
-                      }
-                      cost={1500} 
-                      onClick={()=>buyItem(1500, 'r4', 'real')} 
-                    />
-                  </StoreCard>
-               </div>
-			   // After Real World Rewards card, ADD:
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black uppercase">🛒 Scholar Store</h2>
+                <div className="px-8 py-4 bg-emerald-600 rounded-2xl font-black text-2xl">
+                  {sc} SC 💎
+                </div>
+              </div>
 
-                  <StoreCard title={<>👑 Prestige Titles <motion.span animate={{scale: [1, 1.1, 1]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
-                    {VIRTUAL_REWARDS.map(reward => (
-                      <StoreItem 
-                        key={reward.id}
-                        name={
-                          <span className="flex items-center gap-2">
-                            <motion.span animate={{scale: [1, 1.15, 1]}} transition={{repeat: Infinity, duration: 2, delay: Math.random()}} className="text-lg">
-                              {reward.emoji}
-                            </motion.span>
-                            {reward.name}
-                          </span>
-                        }
-                        cost={reward.cost}
-                        unlocked={unlockedRewards.includes(reward.id)}
-                        onClick={() => buyItem(reward.cost, reward.id, 'virtual')}
-                      />
-                    ))}
-                  </StoreCard>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <StoreCard title={<>🎨 Themes <Sparkles className="inline" size={16}/></>}>
+                  {THEMES.map(theme => (
+                    <StoreItem 
+                      key={theme.id}
+                      name={theme.name}
+                      cost={theme.cost}
+                      unlocked={unlockedThemes.includes(theme.id)}
+                      onClick={() => buyItem(theme.cost, theme.id, 'theme')}
+                    />
+                  ))}
+                </StoreCard>
 
-               {/* Badges Section */}
-               {unlockedBadges.length > 0 && (
-                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem]">
-                   <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-6">🏆 Your Badges</h3>
-                   <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                     {unlockedBadges.map(badge => (
-                       <div key={badge} className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-center">
-                         <p className="text-3xl mb-2">🏆</p>
-                         <p className="text-xs font-black">{badge.replace('badge_', '')}00 SC</p>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               )}
+                <StoreCard title={<>🎵 Audio Tracks <Music className="inline" size={16}/></>}>
+                  {LOFI_LIBRARY.map(track => (
+                    <StoreItem 
+                      key={track.id}
+                      name={`${track.emoji} ${track.name}`}
+                      cost={track.cost}
+                      unlocked={unlockedTracks.includes(track.id)}
+                      onClick={() => buyItem(track.cost, track.id, 'track')}
+                    />
+                  ))}
+                </StoreCard>
+
+                <StoreCard title={<>👑 Prestige Titles <motion.span animate={{scale: [1, 1.1, 1]}} transition={{repeat: Infinity, duration: 1.5}}>✨</motion.span></>}>
+                  {VIRTUAL_REWARDS.map(reward => (
+                    <StoreItem 
+                      key={reward.id}
+                      name={
+                        <span className="flex items-center gap-2">
+                          <motion.span animate={{scale: [1, 1.15, 1]}} transition={{repeat: Infinity, duration: 2, delay: Math.random()}} className="text-lg">
+                            {reward.emoji}
+                          </motion.span>
+                          {reward.name}
+                        </span>
+                      }
+                      cost={reward.cost}
+                      unlocked={unlockedRewards.includes(reward.id)}
+                      onClick={() => buyItem(reward.cost, reward.id, 'virtual')}
+                    />
+                  ))}
+                </StoreCard>
+
+                <StoreCard title={<>🎁 Real World Rewards <Gift className="inline" size={16}/></>}>
+                  <StoreItem name="☕ Coffee Break" cost={500} unlocked={unlockedBadges.includes('coffee')} onClick={() => buyItem(500, 'coffee', 'badge')} />
+                  <StoreItem name="🍕 Pizza Party" cost={1000} unlocked={unlockedBadges.includes('pizza')} onClick={() => buyItem(1000, 'pizza', 'badge')} />
+                  <StoreItem name="🎮 Gaming Session" cost={1500} unlocked={unlockedBadges.includes('game')} onClick={() => buyItem(1500, 'game', 'badge')} />
+                  <StoreItem name="🎬 Movie Night" cost={2000} unlocked={unlockedBadges.includes('movie')} onClick={() => buyItem(2000, 'movie', 'badge')} />
+                  <StoreItem name="🛍️ Shopping Spree" cost={5000} unlocked={unlockedBadges.includes('shop')} onClick={() => buyItem(5000, 'shop', 'badge')} />
+                </StoreCard>
+              </div>
             </motion.div>
           )}
 
-          {/* ⏱️ FOCUS HUB */}
-          {activeTab === 'focus' && (
-            <motion.div key="f" initial={{opacity:0}} animate={{opacity:1}} className="max-w-4xl mx-auto h-[70vh] flex flex-col items-center justify-center space-y-12">
-               <div className="flex bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10">
-                  <button onClick={()=>setFocusMode('timer')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${focusMode==='timer' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Timer ⏱️</button>
-                  <button onClick={()=>setFocusMode('stopwatch')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${focusMode==='stopwatch' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Stopwatch ⏲️</button>
-               </div>
-               <div className="text-center">
-                  <h2 className="text-8xl md:text-[12rem] font-mono font-black tracking-tighter tabular-nums">
-                    {focusMode === 'timer' ? formatTime(timeLeft) : formatTime(stopwatchTime)}
-                  </h2>
-               </div>
-               <div className="flex gap-4">
-                  <button onClick={()=>setIsActive(!isActive)} className="px-12 py-5 bg-white text-black font-black uppercase rounded-2xl text-sm tracking-widest hover:scale-105 transition-transform">
-                    {isActive ? '⏸️ Pause' : '▶️ Start'}
-                  </button>
-                  <button onClick={()=>{setIsActive(false); focusMode==='timer' ? setTimeLeft(1500) : setStopwatchTime(0)}} className="p-5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
-                    <RotateCcw/>
-                  </button>
-               </div>
+          {/* 😊 MOOD TAB */}
+          {activeTab === 'mood' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black uppercase">😊 Mood Tracker</h2>
+                <button 
+                  onClick={() => setShowMoodLog(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={16}/> Log Mood
+                </button>
+              </div>
+
+              {moodHistory.length > 0 ? (
+                <div className="grid gap-4">
+                  {moodHistory.map((log, idx) => (
+                    <motion.div 
+                      key={idx}
+                      initial={{opacity: 0, x: -20}}
+                      animate={{opacity: 1, x: 0}}
+                      transition={{delay: idx * 0.05}}
+                      className="bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-4xl">
+                            {log.mood === 5 ? '😄' : log.mood === 4 ? '😊' : log.mood === 3 ? '😐' : log.mood === 2 ? '😕' : '😢'}
+                          </span>
+                          <div>
+                            <p className="font-black">{log.subject}</p>
+                            <p className="text-xs text-slate-500">{log.date}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-mono font-black text-emerald-400">{log.credits} SC</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 text-slate-500">
+                  <Smile size={64} className="mx-auto mb-4 opacity-20"/>
+                  <p className="text-lg font-bold">No mood logs yet. Track your first study session!</p>
+                </div>
+              )}
             </motion.div>
           )}
 
-        </AnimatePresence>
-      </main>
+          {/* ⚙️ ADVANCED TAB */}
+          {activeTab === 'advanced' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">⚙️ Advanced Settings</h2>
 
-      {/* MODALS */}
-      
-      {/* 🎁 DAILY BONUS MODAL */}
-      <AnimatePresence>
-        {showBonusModal && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowBonusModal(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.8, y: 50}}
-              animate={{scale: 1, y: 0}}
-              exit={{scale: 0.8, y: 50}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-gradient-to-br from-amber-500 to-orange-600 p-12 rounded-[3rem] max-w-md text-center space-y-6 shadow-2xl"
-            >
-              <motion.div
-                animate={{rotate: [0, 10, -10, 0], scale: [1, 1.1, 1]}}
-                transition={{repeat: Infinity, duration: 2}}
-                className="text-8xl"
-              >
-                🎁
-              </motion.div>
-              <h2 className="text-4xl font-black uppercase">Daily Bonus!</h2>
-              <div className="space-y-2">
-                <p className="text-6xl font-black font-mono">{50 + (dailyStreak * 10)} SC 💎</p>
-                <p className="text-sm font-black uppercase tracking-widest">
-                  Day {dailyStreak + 1} Streak 🔥
-                </p>
-              </div>
-              <button 
-                onClick={claimDailyBonus}
-                className="w-full py-5 bg-white text-orange-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
-              >
-                Claim Bonus! ✨
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 📝 ADD MARK MODAL */}
-      <AnimatePresence>
-        {showAddMarkModal && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowAddMarkModal(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.8, y: 50}}
-              animate={{scale: 1, y: 0}}
-              exit={{scale: 0.8, y: 50}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
-            >
-              <h2 className="text-3xl font-black uppercase text-center">Add Exam Mark 📝</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
-                  <select 
-                    value={selectedSubject}
-                    onChange={(e)=>setSelectedSubject(e.target.value)}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">Select Subject</option>
-                    {SUBJECTS.map(s => (
-                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Mark (%)</label>
-                  <input 
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newMark}
-                    onChange={(e)=>setNewMark(e.target.value)}
-                    placeholder="0-100"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-2xl text-center focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <button 
-                  onClick={()=>setShowAddMarkModal(false)}
-                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={addExamMark}
-                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase text-sm hover:bg-blue-500"
-                >
-                  Add Mark ✅
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 🎯 MILESTONE MODAL */}
-      <AnimatePresence>
-        {showMilestoneModal && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowMilestoneModal(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.8, y: 50}}
-              animate={{scale: 1, y: 0}}
-              exit={{scale: 0.8, y: 50}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
-            >
-              <h2 className="text-3xl font-black uppercase text-center">New Milestone 🎯</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Goal</label>
-                  <input 
-                    type="text"
-                    value={newMilestone.goal}
-                    onChange={(e)=>setNewMilestone({...newMilestone, goal: e.target.value})}
-                    placeholder="e.g., Complete Physics syllabus"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Target Credits</label>
-                  <input 
-                    type="number"
-                    value={newMilestone.target}
-                    onChange={(e)=>setNewMilestone({...newMilestone, target: e.target.value})}
-                    placeholder="500"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-xl text-center focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Deadline</label>
-                  <input 
-                    type="date"
-                    value={newMilestone.deadline}
-                    onChange={(e)=>setNewMilestone({...newMilestone, deadline: e.target.value})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <button 
-                  onClick={()=>setShowMilestoneModal(false)}
-                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={addMilestone}
-                  className="flex-1 py-4 bg-purple-600 rounded-2xl font-black uppercase text-sm hover:bg-purple-500"
-                >
-                  Create Goal ✨
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 😊 MOOD MODAL */}
-      <AnimatePresence>
-        {showMoodModal && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowMoodModal(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.8, y: 50}}
-              animate={{scale: 1, y: 0}}
-              exit={{scale: 0.8, y: 50}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
-            >
-              <h2 className="text-3xl font-black uppercase text-center">Log Your Mood 😊</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">How do you feel?</label>
-                  <div className="grid grid-cols-4 gap-4">
-                    {[
-                      { val: 0, emoji: '😫', label: 'Confused' },
-                      { val: 1, emoji: '😐', label: 'Learning' },
-                      { val: 2, emoji: '😊', label: 'Got it' },
-                      { val: 3, emoji: '🤓', label: 'Mastered' }
-                    ].map(m => (
-                      <button
-                        key={m.val}
-                        onClick={()=>setCurrentMood({...currentMood, mood: m.val})}
-                        className={`p-4 rounded-2xl border transition-all ${currentMood.mood === m.val ? 'bg-pink-600 border-pink-400' : 'bg-black/20 border-white/10'}`}
-                      >
-                        <p className="text-4xl mb-2">{m.emoji}</p>
-                        <p className="text-xs font-black">{m.label}</p>
-                      </button>
-                    ))}
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                <h3 className="text-2xl font-black mb-6">Profile Settings</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-black uppercase tracking-widest text-slate-400 mb-2 block">Display Name</label>
+                    <input 
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                    />
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
-                  <select 
-                    value={currentMood.subject}
-                    onChange={(e)=>setCurrentMood({...currentMood, subject: e.target.value})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-pink-500 focus:outline-none"
-                  >
-                    <option value="">Select Subject</option>
-                    {SUBJECTS.map(s => (
-                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
-              
-              <div className="flex gap-4">
-                <button 
-                  onClick={()=>setShowMoodModal(false)}
-                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={addMoodEntry}
-                  className="flex-1 py-4 bg-pink-600 rounded-2xl font-black uppercase text-sm hover:bg-pink-500"
-                >
-                  Log Mood (+10 SC)
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* 📝 PAST PAPER MODAL */}
-      <AnimatePresence>
-        {showPaperModal && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowPaperModal(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.8, y: 50}}
-              animate={{scale: 1, y: 0}}
-              exit={{scale: 0.8, y: 50}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
-            >
-              <h2 className="text-3xl font-black uppercase text-center">Add Past Paper 📝</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
-                  <select 
-                    value={newPaper.subject}
-                    onChange={(e)=>setNewPaper({...newPaper, subject: e.target.value})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black uppercase text-sm focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">Select Subject</option>
-                    {SUBJECTS.map(s => (
-                      <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                <h3 className="text-2xl font-black mb-6">🎬 Exam Time Simulator</h3>
+                <p className="text-sm text-slate-400 mb-6">Simulate exam conditions with a 3-hour countdown timer</p>
                 
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Year</label>
-                  <input 
-                    type="text"
-                    value={newPaper.year}
-                    onChange={(e)=>setNewPaper({...newPaper, year: e.target.value})}
-                    placeholder="2024"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Score (%)</label>
-                  <input 
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newPaper.score}
-                    onChange={(e)=>setNewPaper({...newPaper, score: e.target.value})}
-                    placeholder="85"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-2xl text-center focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Time Spent (mins)</label>
-                  <input 
-                    type="number"
-                    value={newPaper.timeSpent}
-                    onChange={(e)=>setNewPaper({...newPaper, timeSpent: e.target.value})}
-                    placeholder="180"
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-blue-500 focus:outline-none"
-                  />
+                <div className="flex items-center gap-4 mb-6">
+                  <button 
+                    onClick={() => setSimMode(!simMode)}
+                    className={`px-8 py-4 rounded-2xl font-black uppercase text-sm ${simMode ? 'bg-emerald-600' : 'bg-white/10'}`}
+                  >
+                    {simMode ? '✅ Enabled' : 'Enable Simulator'}
+                  </button>
+                  
+                  {simMode && (
+                    <div className="flex-1 text-center">
+                      <p className="text-6xl font-mono font-black tabular-nums text-red-400">
+                        {formatTime(simTime)}
+                      </p>
+                      <div className="flex gap-4 justify-center mt-4">
+                        <button 
+                          onClick={() => setSimActive(!simActive)}
+                          className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-black uppercase"
+                        >
+                          {simActive ? 'Pause' : 'Start'}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setSimActive(false);
+                            setSimTime(10800);
+                          }}
+                          className="px-8 py-3 bg-red-600 hover:bg-red-500 rounded-xl font-black uppercase"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              <div className="flex gap-4">
-                <button 
-                  onClick={()=>setShowPaperModal(false)}
-                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase text-sm hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={addPastPaper}
-                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase text-sm hover:bg-blue-500"
-                >
-                  Add Paper ✅
-                </button>
+
+              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                <h3 className="text-2xl font-black mb-6">📊 Data Management</h3>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={exportReport}
+                    className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center justify-center gap-2"
+                  >
+                    <Download size={18}/> Export Data
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (confirm('⚠️ This will delete all your progress. Are you sure?')) {
+                        localStorage.clear();
+                        window.location.reload();
+                      }
+                    }}
+                    className="flex-1 px-6 py-4 bg-red-600 hover:bg-red-500 rounded-2xl font-black uppercase text-sm"
+                  >
+                    Reset All Data
+                  </button>
+                </div>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 🎉 MOTIVATIONAL UNLOCK MODAL */}
-      <AnimatePresence>
-        {showMotivation && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={()=>setShowMotivation(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.5, rotate: -10}}
-              animate={{scale: 1, rotate: 0}}
-              exit={{scale: 0.5, rotate: 10}}
-              onClick={(e)=>e.stopPropagation()}
-              className="bg-gradient-to-br from-purple-600 to-pink-600 p-12 rounded-[3rem] max-w-lg text-center space-y-6 shadow-2xl"
-            >
-              <motion.div
-                animate={{y: [0, -20, 0]}}
-                transition={{repeat: Infinity, duration: 2}}
-                className="text-8xl"
-              >
-                🎉
-              </motion.div>
-              <h2 className="text-3xl font-black uppercase">Milestone Reached!</h2>
-              <p className="text-xl italic">"{currentQuote}"</p>
-              <p className="text-sm font-black">You've earned {lastUnlockAt * 100} total credits! 🏆</p>
-              <button 
-                onClick={()=>setShowMotivation(false)}
-                className="w-full py-5 bg-white text-purple-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
-              >
-                Keep Going! 💪
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-// After Motivational Modal (line 2077), ADD:
+          )}
+        </div>
+      </main>
 
       {/* 🎨 THEME CUSTOMIZER MODAL */}
       <AnimatePresence>
@@ -2281,45 +1500,77 @@ export default function ScholarOS() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
             >
-              <h2 className="text-3xl font-black uppercase text-center">Theme Customizer 🎨</h2>
+              <h2 className="text-3xl font-black uppercase text-center">🎨 Theme Customizer</h2>
               
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Primary Color</label>
-                  <input 
-                    type="color"
-                    value={customColors.primary}
-                    onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
-                    className="w-full h-12 rounded-xl cursor-pointer"
-                  />
+                  <div className="flex gap-3 items-center">
+                    <input 
+                      type="color"
+                      value={customColors.primary}
+                      onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
+                      className="w-16 h-16 rounded-xl cursor-pointer border-2 border-white/20"
+                    />
+                    <input 
+                      type="text"
+                      value={customColors.primary}
+                      onChange={(e) => setCustomColors({...customColors, primary: e.target.value})}
+                      className="flex-1 px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm"
+                    />
+                  </div>
                 </div>
                 
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Secondary Color</label>
-                  <input 
-                    type="color"
-                    value={customColors.secondary}
-                    onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
-                    className="w-full h-12 rounded-xl cursor-pointer"
-                  />
+                  <div className="flex gap-3 items-center">
+                    <input 
+                      type="color"
+                      value={customColors.secondary}
+                      onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
+                      className="w-16 h-16 rounded-xl cursor-pointer border-2 border-white/20"
+                    />
+                    <input 
+                      type="text"
+                      value={customColors.secondary}
+                      onChange={(e) => setCustomColors({...customColors, secondary: e.target.value})}
+                      className="flex-1 px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Accent Color</label>
-                  <input 
-                    type="color"
-                    value={customColors.accent}
-                    onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
-                    className="w-full h-12 rounded-xl cursor-pointer"
-                  />
+                  <div className="flex gap-3 items-center">
+                    <input 
+                      type="color"
+                      value={customColors.accent}
+                      onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
+                      className="w-16 h-16 rounded-xl cursor-pointer border-2 border-white/20"
+                    />
+                    <input 
+                      type="text"
+                      value={customColors.accent}
+                      onChange={(e) => setCustomColors({...customColors, accent: e.target.value})}
+                      className="flex-1 px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-black/40 p-6 rounded-2xl">
+                  <p className="text-xs font-black uppercase text-slate-400 mb-3">Preview</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1 h-12 rounded-xl" style={{backgroundColor: customColors.primary}}></div>
+                    <div className="flex-1 h-12 rounded-xl" style={{backgroundColor: customColors.secondary}}></div>
+                    <div className="flex-1 h-12 rounded-xl" style={{backgroundColor: customColors.accent}}></div>
+                  </div>
                 </div>
               </div>
               
               <button 
                 onClick={() => {
-                  localStorage.setItem(`custom_colors_${name}`, JSON.stringify(customColors));
                   setShowThemeCustomizer(false);
-                  alert("Theme saved! 🎨");
+                  confetti({ particleCount: 100, spread: 70 });
                 }}
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-black uppercase hover:scale-105 transition-transform"
               >
@@ -2347,7 +1598,7 @@ export default function ScholarOS() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
             >
-              <h2 className="text-3xl font-black uppercase text-center">Pomodoro Settings 🍅</h2>
+              <h2 className="text-3xl font-black uppercase text-center">🍅 Pomodoro Settings</h2>
               
               <div className="space-y-4">
                 <div>
@@ -2356,7 +1607,9 @@ export default function ScholarOS() {
                     type="number"
                     value={pomodoroSettings.workTime}
                     onChange={(e) => setPomodoroSettings({...pomodoroSettings, workTime: Number(e.target.value)})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center text-2xl focus:border-purple-500 focus:outline-none"
+                    min="1"
+                    max="120"
                   />
                 </div>
                 
@@ -2366,7 +1619,9 @@ export default function ScholarOS() {
                     type="number"
                     value={pomodoroSettings.shortBreak}
                     onChange={(e) => setPomodoroSettings({...pomodoroSettings, shortBreak: Number(e.target.value)})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center text-2xl focus:border-purple-500 focus:outline-none"
+                    min="1"
+                    max="30"
                   />
                 </div>
 
@@ -2376,7 +1631,9 @@ export default function ScholarOS() {
                     type="number"
                     value={pomodoroSettings.longBreak}
                     onChange={(e) => setPomodoroSettings({...pomodoroSettings, longBreak: Number(e.target.value)})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center text-2xl focus:border-purple-500 focus:outline-none"
+                    min="1"
+                    max="60"
                   />
                 </div>
 
@@ -2386,13 +1643,21 @@ export default function ScholarOS() {
                     type="number"
                     value={pomodoroSettings.cycles}
                     onChange={(e) => setPomodoroSettings({...pomodoroSettings, cycles: Number(e.target.value)})}
-                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center focus:border-purple-500 focus:outline-none"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-black text-center text-2xl focus:border-purple-500 focus:outline-none"
+                    min="1"
+                    max="10"
                   />
                 </div>
               </div>
               
               <button 
-                onClick={savePomodoroSettings}
+                onClick={() => {
+                  setShowPomodoroCustomizer(false);
+                  setTimeLeft(pomodoroSettings.workTime * 60);
+                  setPomodoroPhase('work');
+                  setPomodoroCycle(0);
+                  confetti({ particleCount: 100, spread: 70 });
+                }}
                 className="w-full py-4 bg-purple-600 rounded-2xl font-black uppercase hover:bg-purple-500"
               >
                 Save Settings ✅
@@ -2401,6 +1666,394 @@ export default function ScholarOS() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 💾 SAVE TIMER MODAL */}
+      <AnimatePresence>
+        {showSaveTimerModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowSaveTimerModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8}}
+              animate={{scale: 1}}
+              exit={{scale: 0.8}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-2xl font-black uppercase text-center">💾 Save Timer</h2>
+              
+              <div>
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Timer Name</label>
+                <input 
+                  type="text"
+                  value={timerName}
+                  onChange={(e) => setTimerName(e.target.value)}
+                  placeholder="e.g., Deep Focus Session"
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  onKeyPress={(e) => e.key === 'Enter' && confirmSaveTimer()}
+                />
+              </div>
+
+              <div className="bg-black/40 p-4 rounded-xl">
+                <p className="text-sm text-slate-400 mb-2">Saving:</p>
+                <p className="font-mono font-black text-2xl text-blue-400">
+                  {formatTime(focusMode === 'timer' ? timeLeft : stopwatchTime)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {focusMode === 'timer' ? '⏱️ Timer' : '⏲️ Stopwatch'}
+                </p>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowSaveTimerModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmSaveTimer}
+                  className="flex-1 py-4 bg-emerald-600 rounded-2xl font-black uppercase hover:bg-emerald-500"
+                >
+                  Save ✅
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎯 NEW MILESTONE MODAL */}
+      <AnimatePresence>
+        {showNewMilestone && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowNewMilestone(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">🎯 New Milestone</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Goal</label>
+                  <input 
+                    type="text"
+                    value={newMilestone.goal}
+                    onChange={(e) => setNewMilestone({...newMilestone, goal: e.target.value})}
+                    placeholder="e.g., Complete Physics Syllabus"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Target SC</label>
+                  <input 
+                    type="number"
+                    value={newMilestone.target}
+                    onChange={(e) => setNewMilestone({...newMilestone, target: e.target.value})}
+                    placeholder="500"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Deadline</label>
+                  <input 
+                    type="date"
+                    value={newMilestone.deadline}
+                    onChange={(e) => setNewMilestone({...newMilestone, deadline: e.target.value})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowNewMilestone(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addMilestone}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase hover:bg-blue-500"
+                >
+                  Create Goal ✨
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 😊 MOOD LOG MODAL */}
+      <AnimatePresence>
+        {showMoodLog && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowMoodLog(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">😊 Log Your Mood</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 block">How are you feeling?</label>
+                  <div className="flex justify-around">
+                    {[
+                      { value: 5, emoji: '😄', label: 'Great' },
+                      { value: 4, emoji: '😊', label: 'Good' },
+                      { value: 3, emoji: '😐', label: 'Okay' },
+                      { value: 2, emoji: '😕', label: 'Meh' },
+                      { value: 1, emoji: '😢', label: 'Bad' }
+                    ].map(mood => (
+                      <button
+                        key={mood.value}
+                        onClick={() => setCurrentMood(mood.value)}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${currentMood === mood.value ? 'bg-blue-600 scale-110' : 'bg-white/5 hover:bg-white/10'}`}
+                      >
+                        <span className="text-3xl">{mood.emoji}</span>
+                        <span className="text-xs font-bold">{mood.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select
+                    value={moodSubject}
+                    onChange={(e) => setMoodSubject(e.target.value)}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select subject...</option>
+                    {SUBJECTS.map(subj => (
+                      <option key={subj.id} value={subj.name}>{subj.emoji} {subj.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">SC Earned</label>
+                  <input 
+                    type="number"
+                    value={moodCredits}
+                    onChange={(e) => setMoodCredits(e.target.value)}
+                    placeholder="50"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowMoodLog(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addMoodLog}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase hover:bg-blue-500"
+                >
+                  Log Mood ✅
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📄 ADD PAST PAPER MODAL */}
+      <AnimatePresence>
+        {showPaperModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowPaperModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              exit={{scale: 0.8, y: 50}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-[2.5rem] max-w-md w-full space-y-6"
+            >
+              <h2 className="text-3xl font-black uppercase text-center">📄 Add Past Paper</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Subject</label>
+                  <select
+                    value={newPaper.subject}
+                    onChange={(e) => setNewPaper({...newPaper, subject: e.target.value})}
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select subject...</option>
+                    {SUBJECTS.map(subj => (
+                      <option key={subj.id} value={subj.name}>{subj.emoji} {subj.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Year</label>
+                  <input 
+                    type="text"
+                    value={newPaper.year}
+                    onChange={(e) => setNewPaper({...newPaper, year: e.target.value})}
+                    placeholder="2024"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Score (%)</label>
+                  <input 
+                    type="number"
+                    value={newPaper.score}
+                    onChange={(e) => setNewPaper({...newPaper, score: e.target.value})}
+                    placeholder="85"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 block">Time Spent (minutes)</label>
+                  <input 
+                    type="number"
+                    value={newPaper.timeSpent}
+                    onChange={(e) => setNewPaper({...newPaper, timeSpent: e.target.value})}
+                    placeholder="180"
+                    className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowPaperModal(false)}
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-black uppercase hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addPastPaper}
+                  className="flex-1 py-4 bg-blue-600 rounded-2xl font-black uppercase hover:bg-blue-500"
+                >
+                  Add Paper ✅
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎉 MOTIVATIONAL UNLOCK MODAL */}
+      <AnimatePresence>
+        {showMotivation && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowMotivation(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.5, rotate: -10}}
+              animate={{scale: 1, rotate: 0}}
+              exit={{scale: 0.5, rotate: 10}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-purple-600 to-pink-600 p-12 rounded-[3rem] max-w-lg text-center space-y-6 shadow-2xl"
+            >
+              <motion.div
+                animate={{y: [0, -20, 0]}}
+                transition={{repeat: Infinity, duration: 2}}
+                className="text-8xl"
+              >
+                🎉
+              </motion.div>
+              <h2 className="text-3xl font-black uppercase">Milestone Reached!</h2>
+              <p className="text-xl italic">&ldquo;{currentQuote}&rdquo;</p>
+              <p className="text-sm font-black">You've earned {lastUnlockAt} total credits! 🏆</p>
+              <button 
+                onClick={() => setShowMotivation(false)}
+                className="w-full py-5 bg-white text-purple-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
+              >
+                Keep Going! 💪
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎁 DAILY BONUS MODAL */}
+      <AnimatePresence>
+        {showBonusModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowBonusModal(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.8, rotate: -5}}
+              animate={{scale: 1, rotate: 0}}
+              exit={{scale: 0.8, rotate: 5}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-amber-500 to-orange-500 p-12 rounded-[3rem] max-w-md text-center space-y-6 shadow-2xl"
+            >
+              <motion.div
+                animate={{rotate: [0, 10, -10, 0]}}
+                transition={{repeat: Infinity, duration: 2}}
+                className="text-8xl"
+              >
+                🎁
+              </motion.div>
+              <h2 className="text-3xl font-black uppercase text-white">Daily Bonus!</h2>
+              <div className="bg-white/20 p-6 rounded-2xl">
+                <p className="text-6xl font-mono font-black text-white">{50 + (dailyStreak * 10)} SC</p>
+                <p className="text-sm font-bold text-white/80 mt-2">🔥 {dailyStreak} Day Streak</p>
+              </div>
+              <button 
+                onClick={claimDailyBonus}
+                className="w-full py-5 bg-white text-amber-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
+                disabled={lastClaimDate === new Date().toDateString()}
+              >
+                {lastClaimDate === new Date().toDateString() ? '✅ Claimed Today' : 'Claim Bonus! 🎉'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 👻 GHOST MODE */}
       <AnimatePresence>
         {isGhostMode && (
@@ -2408,42 +2061,8 @@ export default function ScholarOS() {
              <h1 className="text-[15rem] font-mono font-black opacity-40 tabular-nums">
                 {focusMode === 'timer' ? formatTime(timeLeft) : formatTime(stopwatchTime)}
              </h1>
-             <button onClick={()=>setIsGhostMode(false)} className="mt-12 text-white/20 hover:text-white uppercase text-[10px] font-black tracking-[0.5em]">[ ESCAPE GHOST PROTOCOL ]</button>
-          // In Focus tab, after timer controls, ADD:
-
-               <div className="flex gap-4 mt-8">
-                  <button 
-                    onClick={() => setShowPomodoroCustomizer(true)}
-                    className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl font-black uppercase text-sm"
-                  >
-                    ⚙️ Pomodoro
-                  </button>
-                  
-                  <button 
-                    onClick={saveCurrentTimer}
-                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm"
-                  >
-                    💾 Save
-                  </button>
-                </div>
-
-                {/* Saved Timers List */}
-                {savedTimers.length > 0 && (
-                  <div className="mt-8 space-y-2 max-w-md mx-auto">
-                    <h3 className="text-sm font-black uppercase text-center">Saved Timers</h3>
-                    {savedTimers.map(timer => (
-                      <button
-                        key={timer.id}
-                        onClick={() => loadSavedTimer(timer)}
-                        className="w-full p-4 bg-white/5 rounded-xl flex justify-between hover:bg-white/10"
-                      >
-                        <span className="font-bold">{timer.name}</span>
-                        <span className="text-blue-400">{formatTime(timer.time)}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-		  </motion.div>
+             <button onClick={() => setIsGhostMode(false)} className="mt-12 text-white/20 hover:text-white uppercase text-[10px] font-black tracking-[0.5em]">[ ESCAPE GHOST PROTOCOL ]</button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
