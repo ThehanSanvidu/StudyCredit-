@@ -8,12 +8,11 @@ import {
   ShoppingCart, Coffee, FastForward, Star, SkipForward, SkipBack, Apple, 
   BarChart3, ClipboardList, Home, Radio, Disc, Volume2, Timer, Settings, Dumbbell, Smartphone, AlertCircle, Link,
   BookOpen, TrendingUp, Plus, Gift, Sparkles, Download, FileText, Smile, Frown, Meh,
-  Award, PieChart, Activity, Flag, Rocket, CheckSquare, Square, Target as TargetIcon, Save, Upload
+  Award, PieChart, Activity, Flag, Rocket, CheckSquare, Square, Target as TargetIcon, Save, Upload, User, LogIn
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// --- CONSTANTS ---
-const EXAM_DATE = new Date('2026-08-15T09:00:00'); // 2026 A/L Exam Date
+const EXAM_DATE = new Date('2026-08-15T09:00:00');
 
 const SUBJECTS = [
   { id: 'phy', name: 'Physics', color: '#a855f7', emoji: '⚛️' },
@@ -41,8 +40,6 @@ const DAILY_QUOTES = [
   "Believe you can and you're halfway there. 🌟",
   "Dream big. Work hard. Stay focused. 🎯"
 ];
-
-// Hard-coded GCE A/L Syllabus
 const SYLLABUS = {
   phy: {
     name: 'Physics',
@@ -163,8 +160,6 @@ const BADGE_TIERS = [
   { day: 100, emoji: '🏆', name: 'Champion' },
   { day: 365, emoji: '🌟', name: 'Legend' }
 ];
-
-// Bubble Background Component
 function LiquidGlassBubbles() {
   const bubbles = Array.from({ length: 15 }, (_, i) => ({
     id: i,
@@ -207,7 +202,6 @@ function LiquidGlassBubbles() {
   );
 }
 
-// Countdown Component
 function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -257,96 +251,26 @@ function CountdownTimer() {
     </div>
   );
 }
+useEffect(() => {
+    const savedName = localStorage.getItem('scholar_current_user');
+    if (!savedName) {
+      setShowLoginModal(true);
+    } else {
+      setName(savedName);
+    }
+  }, []);
 
-export default function ScholarOS() {
-  const [activeTab, setActiveTab] = useState<'home' | 'analytics' | 'store' | 'audio' | 'focus' | 'subjects' | 'syllabus' | 'advanced' | 'milestones' | 'mood'>('home');
-  const [sc, setSc] = useState(0);
-  const [totalSeconds, setTotalSeconds] = useState(0);
-  const [name, setName] = useState("Scholar");
-  const [isGhostMode, setIsGhostMode] = useState(false);
-  const [completedTopics, setCompletedTopics] = useState<Record<string, string[]>>({});
-  const [milestones, setMilestones] = useState<Array<{id: string, goal: string, target: number, deadline: string, completed: boolean}>>([]);
-  const [moodHistory, setMoodHistory] = useState<Array<{date: string, mood: number, subject: string, credits: number}>>([]);
-  const [pastPapers, setPastPapers] = useState<Array<{id: string, subject: string, year: string, score: number, date: string, timeSpent: number}>>([]);
-  const [currentTheme, setCurrentTheme] = useState('dark');
-  const [unlockedThemes, setUnlockedThemes] = useState<string[]>(['dark']);
-  const [lastUnlockAt, setLastUnlockAt] = useState(0);
-  const [showMotivation, setShowMotivation] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState("");
-  const [simMode, setSimMode] = useState(false);
-  const [simTime, setSimTime] = useState(10800);
-  const [simActive, setSimActive] = useState(false);
-  const [dailyStreak, setDailyStreak] = useState(0);
-  const [lastClaimDate, setLastClaimDate] = useState("");
-  const [showBonusModal, setShowBonusModal] = useState(false);
-  const [examMarks, setExamMarks] = useState<Record<string, number[]>>({});
-  const [showAddMarkModal, setShowAddMarkModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [newMark, setNewMark] = useState("");
-  const [streak, setStreak] = useState(0);
-  const [unlockedTracks, setUnlockedTracks] = useState<string[]>(['t1']);
-  const [unlockedRewards, setUnlockedRewards] = useState<string[]>([]);
-  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
-  const [focusMode, setFocusMode] = useState<'timer' | 'stopwatch'>('timer');
-  const [timeLeft, setTimeLeft] = useState(1500);
-  const [stopwatchTime, setStopwatchTime] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackIdx, setCurrentTrackIdx] = useState(0);
-
-  // NEW FEATURES - Theme Customizer
-  const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
-  const [customColors, setCustomColors] = useState({
-    primary: '#3b82f6',
-    secondary: '#a855f7',
-    accent: '#10b981'
-  });
-
-  // NEW FEATURES - Daily Quote
-  const [dailyQuote, setDailyQuote] = useState("");
-
-  // NEW FEATURES - Daily Badge
-  const [dailyBadge, setDailyBadge] = useState({ show: false, badge: '', emoji: '', day: 0 });
-
-  // NEW FEATURES - Pomodoro Customization
-  const [pomodoroSettings, setPomodoroSettings] = useState({
-    workTime: 25,
-    shortBreak: 5,
-    longBreak: 15,
-    cycles: 4
-  });
-  const [showPomodoroCustomizer, setShowPomodoroCustomizer] = useState(false);
-  const [pomodoroCycle, setPomodoroCycle] = useState(0);
-  const [pomodoroPhase, setPomodoroPhase] = useState<'work' | 'short' | 'long'>('work');
-
-  // NEW FEATURES - Timer Save/Load
-  const [savedTimers, setSavedTimers] = useState<Array<{id: string, name: string, time: number, type: 'timer' | 'stopwatch'}>>([]);
-  const [showSaveTimerModal, setShowSaveTimerModal] = useState(false);
-  const [timerName, setTimerName] = useState("");
-
-  // Modals
-  const [showNewMilestone, setShowNewMilestone] = useState(false);
-  const [newMilestone, setNewMilestone] = useState({ goal: '', target: '', deadline: '' });
-  const [showMoodLog, setShowMoodLog] = useState(false);
-  const [currentMood, setCurrentMood] = useState(3);
-  const [moodSubject, setMoodSubject] = useState('');
-  const [moodCredits, setMoodCredits] = useState('');
-  const [showPaperModal, setShowPaperModal] = useState(false);
-  const [newPaper, setNewPaper] = useState({ subject: '', year: '', score: '', timeSpent: '' });
-
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  // Initialize daily quote and badge
   useEffect(() => {
+    if (!name) return;
+    
     const today = new Date().toDateString();
     const quoteIndex = new Date().getDate() % DAILY_QUOTES.length;
     setDailyQuote(DAILY_QUOTES[quoteIndex]);
 
-    // Check daily badge
     const lastBadgeDate = localStorage.getItem(`last_badge_${name}`);
     if (lastBadgeDate !== today) {
       const currentStreak = dailyStreak > 0 ? dailyStreak : 1;
-      const badge = BADGE_TIERS.reverse().find(b => currentStreak >= b.day) || BADGE_TIERS[0];
+      const badge = [...BADGE_TIERS].reverse().find(b => currentStreak >= b.day) || BADGE_TIERS[0];
       setDailyBadge({ 
         show: true, 
         badge: badge.name, 
@@ -355,38 +279,36 @@ export default function ScholarOS() {
       });
       localStorage.setItem(`last_badge_${name}`, today);
       
-      // Hide badge after 5 seconds
       setTimeout(() => {
         setDailyBadge(prev => ({ ...prev, show: false }));
       }, 5000);
     }
   }, [dailyStreak, name]);
 
-  // Load data from localStorage
   useEffect(() => {
-    const savedName = localStorage.getItem('scholar_name');
-    const savedSc = localStorage.getItem('scholar_sc');
-    const savedSeconds = localStorage.getItem('scholar_totalSeconds');
-    const savedCompleted = localStorage.getItem('scholar_completedTopics');
-    const savedMilestones = localStorage.getItem('scholar_milestones');
-    const savedMoods = localStorage.getItem('scholar_moodHistory');
-    const savedPapers = localStorage.getItem('scholar_pastPapers');
-    const savedTheme = localStorage.getItem('scholar_currentTheme');
-    const savedUnlockedThemes = localStorage.getItem('scholar_unlockedThemes');
-    const savedLastUnlock = localStorage.getItem('scholar_lastUnlockAt');
-    const savedSimMode = localStorage.getItem('scholar_simMode');
-    const savedSimTime = localStorage.getItem('scholar_simTime');
-    const savedStreak = localStorage.getItem('scholar_dailyStreak');
-    const savedLastClaim = localStorage.getItem('scholar_lastClaimDate');
-    const savedMarks = localStorage.getItem('scholar_examMarks');
-    const savedUnlockedTracks = localStorage.getItem('scholar_unlockedTracks');
-    const savedUnlockedRewards = localStorage.getItem('scholar_unlockedRewards');
-    const savedUnlockedBadges = localStorage.getItem('scholar_unlockedBadges');
-    const savedCustomColors = localStorage.getItem(`custom_colors_${savedName || 'Scholar'}`);
-    const savedPomodoroSettings = localStorage.getItem(`pomodoro_settings_${savedName || 'Scholar'}`);
-    const savedTimersList = localStorage.getItem(`saved_timers_${savedName || 'Scholar'}`);
+    if (!name) return;
 
-    if (savedName) setName(savedName);
+    const savedSc = localStorage.getItem(`scholar_sc_${name}`);
+    const savedSeconds = localStorage.getItem(`scholar_totalSeconds_${name}`);
+    const savedCompleted = localStorage.getItem(`scholar_completedTopics_${name}`);
+    const savedMilestones = localStorage.getItem(`scholar_milestones_${name}`);
+    const savedMoods = localStorage.getItem(`scholar_moodHistory_${name}`);
+    const savedPapers = localStorage.getItem(`scholar_pastPapers_${name}`);
+    const savedTheme = localStorage.getItem(`scholar_currentTheme_${name}`);
+    const savedUnlockedThemes = localStorage.getItem(`scholar_unlockedThemes_${name}`);
+    const savedLastUnlock = localStorage.getItem(`scholar_lastUnlockAt_${name}`);
+    const savedSimMode = localStorage.getItem(`scholar_simMode_${name}`);
+    const savedSimTime = localStorage.getItem(`scholar_simTime_${name}`);
+    const savedStreak = localStorage.getItem(`scholar_dailyStreak_${name}`);
+    const savedLastClaim = localStorage.getItem(`scholar_lastClaimDate_${name}`);
+    const savedMarks = localStorage.getItem(`scholar_examMarks_${name}`);
+    const savedUnlockedTracks = localStorage.getItem(`scholar_unlockedTracks_${name}`);
+    const savedUnlockedRewards = localStorage.getItem(`scholar_unlockedRewards_${name}`);
+    const savedUnlockedBadges = localStorage.getItem(`scholar_unlockedBadges_${name}`);
+    const savedCustomColors = localStorage.getItem(`custom_colors_${name}`);
+    const savedPomodoroSettings = localStorage.getItem(`pomodoro_settings_${name}`);
+    const savedTimersList = localStorage.getItem(`saved_timers_${name}`);
+
     if (savedSc) setSc(parseInt(savedSc));
     if (savedSeconds) setTotalSeconds(parseInt(savedSeconds));
     if (savedCompleted) setCompletedTopics(JSON.parse(savedCompleted));
@@ -408,45 +330,41 @@ export default function ScholarOS() {
     if (savedPomodoroSettings) setPomodoroSettings(JSON.parse(savedPomodoroSettings));
     if (savedTimersList) setSavedTimers(JSON.parse(savedTimersList));
 
-    // Check daily streak
     const today = new Date().toDateString();
     if (savedLastClaim !== today) {
       const yesterday = new Date(Date.now() - 86400000).toDateString();
       if (savedLastClaim === yesterday) {
-        // Continue streak
       } else if (savedLastClaim !== today) {
-        // Reset streak
         setDailyStreak(0);
       }
     }
-  }, []);
+  }, [name]);
 
-  // Save data to localStorage
   useEffect(() => {
-    localStorage.setItem('scholar_name', name);
-    localStorage.setItem('scholar_sc', sc.toString());
-    localStorage.setItem('scholar_totalSeconds', totalSeconds.toString());
-    localStorage.setItem('scholar_completedTopics', JSON.stringify(completedTopics));
-    localStorage.setItem('scholar_milestones', JSON.stringify(milestones));
-    localStorage.setItem('scholar_moodHistory', JSON.stringify(moodHistory));
-    localStorage.setItem('scholar_pastPapers', JSON.stringify(pastPapers));
-    localStorage.setItem('scholar_currentTheme', currentTheme);
-    localStorage.setItem('scholar_unlockedThemes', JSON.stringify(unlockedThemes));
-    localStorage.setItem('scholar_lastUnlockAt', lastUnlockAt.toString());
-    localStorage.setItem('scholar_simMode', simMode.toString());
-    localStorage.setItem('scholar_simTime', simTime.toString());
-    localStorage.setItem('scholar_dailyStreak', dailyStreak.toString());
-    localStorage.setItem('scholar_lastClaimDate', lastClaimDate);
-    localStorage.setItem('scholar_examMarks', JSON.stringify(examMarks));
-    localStorage.setItem('scholar_unlockedTracks', JSON.stringify(unlockedTracks));
-    localStorage.setItem('scholar_unlockedRewards', JSON.stringify(unlockedRewards));
-    localStorage.setItem('scholar_unlockedBadges', JSON.stringify(unlockedBadges));
+    if (!name) return;
+
+    localStorage.setItem(`scholar_sc_${name}`, sc.toString());
+    localStorage.setItem(`scholar_totalSeconds_${name}`, totalSeconds.toString());
+    localStorage.setItem(`scholar_completedTopics_${name}`, JSON.stringify(completedTopics));
+    localStorage.setItem(`scholar_milestones_${name}`, JSON.stringify(milestones));
+    localStorage.setItem(`scholar_moodHistory_${name}`, JSON.stringify(moodHistory));
+    localStorage.setItem(`scholar_pastPapers_${name}`, JSON.stringify(pastPapers));
+    localStorage.setItem(`scholar_currentTheme_${name}`, currentTheme);
+    localStorage.setItem(`scholar_unlockedThemes_${name}`, JSON.stringify(unlockedThemes));
+    localStorage.setItem(`scholar_lastUnlockAt_${name}`, lastUnlockAt.toString());
+    localStorage.setItem(`scholar_simMode_${name}`, simMode.toString());
+    localStorage.setItem(`scholar_simTime_${name}`, simTime.toString());
+    localStorage.setItem(`scholar_dailyStreak_${name}`, dailyStreak.toString());
+    localStorage.setItem(`scholar_lastClaimDate_${name}`, lastClaimDate);
+    localStorage.setItem(`scholar_examMarks_${name}`, JSON.stringify(examMarks));
+    localStorage.setItem(`scholar_unlockedTracks_${name}`, JSON.stringify(unlockedTracks));
+    localStorage.setItem(`scholar_unlockedRewards_${name}`, JSON.stringify(unlockedRewards));
+    localStorage.setItem(`scholar_unlockedBadges_${name}`, JSON.stringify(unlockedBadges));
     localStorage.setItem(`custom_colors_${name}`, JSON.stringify(customColors));
     localStorage.setItem(`pomodoro_settings_${name}`, JSON.stringify(pomodoroSettings));
     localStorage.setItem(`saved_timers_${name}`, JSON.stringify(savedTimers));
   }, [name, sc, totalSeconds, completedTopics, milestones, moodHistory, pastPapers, currentTheme, unlockedThemes, lastUnlockAt, simMode, simTime, dailyStreak, lastClaimDate, examMarks, unlockedTracks, unlockedRewards, unlockedBadges, customColors, pomodoroSettings, savedTimers]);
 
-  // Timer/Stopwatch logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isActive) {
@@ -468,7 +386,6 @@ export default function ScholarOS() {
     return () => clearInterval(interval);
   }, [isActive, focusMode]);
 
-  // Simulator timer
   useEffect(() => {
     let simInterval: NodeJS.Timeout;
     if (simActive && simMode) {
@@ -486,25 +403,20 @@ export default function ScholarOS() {
     return () => clearInterval(simInterval);
   }, [simActive, simMode]);
 
-  // Pomodoro auto-switch
   useEffect(() => {
     if (focusMode === 'timer' && timeLeft === 0 && isActive) {
-      // Pomodoro cycle complete
       if (pomodoroPhase === 'work') {
         const newCycle = pomodoroCycle + 1;
         setPomodoroCycle(newCycle);
         
         if (newCycle % pomodoroSettings.cycles === 0) {
-          // Long break
           setPomodoroPhase('long');
           setTimeLeft(pomodoroSettings.longBreak * 60);
         } else {
-          // Short break
           setPomodoroPhase('short');
           setTimeLeft(pomodoroSettings.shortBreak * 60);
         }
       } else {
-        // Back to work
         setPomodoroPhase('work');
         setTimeLeft(pomodoroSettings.workTime * 60);
       }
@@ -512,13 +424,28 @@ export default function ScholarOS() {
       setIsActive(false);
     }
   }, [timeLeft, isActive, focusMode, pomodoroPhase, pomodoroCycle, pomodoroSettings]);
+  const handleLogin = () => {
+    if (loginName.trim()) {
+      setName(loginName.trim());
+      localStorage.setItem('scholar_current_user', loginName.trim());
+      setShowLoginModal(false);
+      confetti({ particleCount: 100, spread: 70 });
+    }
+  };
+
+  const handleLogout = () => {
+    if (confirm('Are you sure you want to logout? Your data is saved locally.')) {
+      localStorage.removeItem('scholar_current_user');
+      setName("");
+      setShowLoginModal(true);
+    }
+  };
 
   const claimTask = (credits: number) => {
     setSc(prev => prev + credits);
     setTotalSeconds(prev => prev + 3600);
     confetti({ particleCount: 50, spread: 60 });
     
-    // Check for unlock
     const newSc = sc + credits;
     const checkpoints = [100, 300, 500, 1000, 2000, 3000, 5000];
     const nextUnlock = checkpoints.find(cp => newSc >= cp && sc < cp);
@@ -683,11 +610,10 @@ export default function ScholarOS() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ScholarOS_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+    a.download = `ScholarOS_Report_${name}_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
     a.click();
   };
 
-  // Audio Controls
   const playTrack = (idx: number) => {
     setCurrentTrackIdx(idx);
     setIsPlaying(true);
@@ -720,7 +646,6 @@ export default function ScholarOS() {
     playTrack(prevIdx);
   };
 
-  // NEW FEATURE: Save Timer
   const saveCurrentTimer = () => {
     setShowSaveTimerModal(true);
   };
@@ -758,7 +683,6 @@ export default function ScholarOS() {
     setSavedTimers(prev => prev.filter(t => t.id !== timerId));
   };
 
-  // Calculate subject progress
   const getSubjectProgress = (subjectId: string) => {
     const subject = SYLLABUS[subjectId as keyof typeof SYLLABUS];
     if (!subject) return 0;
@@ -771,6 +695,9 @@ export default function ScholarOS() {
 
   const themeColors = THEMES.find(t => t.id === currentTheme)?.colors || THEMES[0].colors;
 
+  if (!name) {
+    return null;
+  }
   return (
     <div 
       className="min-h-screen text-white font-sans flex flex-col lg:flex-row overflow-hidden relative transition-colors duration-500"
@@ -783,7 +710,50 @@ export default function ScholarOS() {
       
       <audio ref={audioRef} loop />
 
-      {/* 🎯 SIDEBAR NAV */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[2000] p-4"
+          >
+            <motion.div 
+              initial={{scale: 0.8, y: 50}}
+              animate={{scale: 1, y: 0}}
+              className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-xl border-2 border-white/20 p-12 rounded-[3rem] max-w-md w-full space-y-8 text-center"
+            >
+              <div className="text-8xl mb-4">🎓</div>
+              <h1 className="text-5xl font-black uppercase tracking-tight">ScholarOS</h1>
+              <p className="text-slate-400 text-sm">Enter your name to begin your study journey</p>
+              
+              <div className="space-y-4">
+                <input 
+                  type="text"
+                  value={loginName}
+                  onChange={(e) => setLoginName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  placeholder="Your Name"
+                  className="w-full px-8 py-6 bg-black/40 border-2 border-white/10 rounded-2xl text-white text-center font-black text-2xl focus:border-blue-500 focus:outline-none placeholder:text-slate-600"
+                  autoFocus
+                />
+                
+                <button 
+                  onClick={handleLogin}
+                  disabled={!loginName.trim()}
+                  className="w-full py-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-black uppercase text-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Start Learning 🚀
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 mt-8">
+                💾 Your progress is saved locally in your browser
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <nav className="lg:w-24 xl:w-32 bg-black/40 backdrop-blur-xl border-r border-white/5 flex lg:flex-col justify-around lg:justify-start items-center p-3 lg:p-6 gap-3 lg:gap-6 z-50 sticky top-0 lg:relative">
         <div className="hidden lg:block text-center mb-8">
           <h1 className="text-2xl xl:text-3xl font-black">🎓</h1>
@@ -798,7 +768,7 @@ export default function ScholarOS() {
         <NavBtn icon={<Music size={18}/>} active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Audio" />
         <NavBtn icon={<ShoppingCart size={18}/>} active={activeTab === 'store'} onClick={() => setActiveTab('store')} label="Store" />
         <NavBtn icon={<Smile size={18}/>} active={activeTab === 'mood'} onClick={() => setActiveTab('mood')} label="Mood" />
-        <NavBtn icon={<Settings size={18}/>} active={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} label="Advanced" />
+        <NavBtn icon={<Settings size={18}/>} active={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} label="Settings" />
 
         <button 
           onClick={() => setShowThemeCustomizer(true)}
@@ -815,21 +785,18 @@ export default function ScholarOS() {
         </button>
       </nav>
 
-      {/* 📱 MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto p-4 lg:p-8 relative z-10">
         <div className="max-w-7xl mx-auto space-y-8">
 
-          {/* 🏠 HOME TAB */}
           {activeTab === 'home' && (
             <motion.div initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} className="space-y-8">
               <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
                 <div className="flex items-center gap-6">
                   <div>
                     <h2 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">Terminal ⚡</h2>
-                    <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Scholar Rank: Elite</p>
+                    <p className="text-blue-500 font-black text-[9px] uppercase tracking-[0.4em] mt-2">Welcome, {name}</p>
                   </div>
 
-                  {/* Daily Badge Display */}
                   <AnimatePresence>
                     {dailyBadge.show && (
                       <motion.div
@@ -864,28 +831,37 @@ export default function ScholarOS() {
                   </AnimatePresence>
                 </div>
 
-                <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
-                  <div className="text-right">
-                    <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Credits</p>
-                  </div>
-                  <div className="text-right border-l border-white/10 pl-8">
-                    <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Study Time</p>
-                  </div>
-                  {dailyStreak > 0 && (
-                    <div className="text-right border-l border-white/10 pl-8">
-                      <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Streak</p>
+                <div className="flex gap-4 items-center">
+                  <div className="flex gap-8 lg:gap-12 bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
+                    <div className="text-right">
+                      <p className="text-2xl lg:text-4xl font-mono font-black text-emerald-400">{sc} 💎</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Credits</p>
                     </div>
-                  )}
+                    <div className="text-right border-l border-white/10 pl-8">
+                      <p className="text-2xl lg:text-4xl font-mono font-black text-blue-400">{totalHours}h ⏳</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Study Time</p>
+                    </div>
+                    {dailyStreak > 0 && (
+                      <div className="text-right border-l border-white/10 pl-8">
+                        <p className="text-2xl lg:text-4xl font-mono font-black text-orange-400">{dailyStreak} 🔥</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Streak</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={handleLogout}
+                    className="p-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-2xl transition-all"
+                    title="Logout"
+                  >
+                    <User size={20} className="text-red-400"/>
+                  </button>
                 </div>
               </header>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <CountdownTimer />
                 
-                {/* Daily Motivational Quote */}
                 <motion.div 
                   initial={{opacity: 0, y: 20}}
                   animate={{opacity: 1, y: 0}}
@@ -936,6 +912,8 @@ export default function ScholarOS() {
                 <TaskItem name="Complete 10 Topics" sc={50} icon={<CheckCircle/>} onClick={() => claimTask(50)} />
                 <TaskItem name="Study for 2 Hours" sc={100} icon={<Clock/>} onClick={() => claimTask(100)} />
                 <TaskItem name="Solve 5 Past Papers" sc={150} icon={<FileText/>} onClick={() => claimTask(150)} />
+                <TaskItem name="Practice MCQs" sc={75} icon={<Brain/>} onClick={() => claimTask(75)} />
+                <TaskItem name="Review Mistakes" sc={80} icon={<Edit3/>} onClick={() => claimTask(80)} />
                 <TaskItem name="Daily Streak Bonus" sc={50 + (dailyStreak * 10)} icon={<Flame/>} onClick={() => setShowBonusModal(true)} gold />
               </TaskGroup>
 
@@ -944,104 +922,12 @@ export default function ScholarOS() {
                 <TaskItem name="Set New Milestone" sc={30} icon={<Target/>} onClick={() => setShowNewMilestone(true)} />
                 <TaskItem name="Add Past Paper Result" sc={25} icon={<Award/>} onClick={() => setShowPaperModal(true)} />
                 <TaskItem name="Add Exam Mark" sc={15} icon={<BarChart3/>} onClick={() => setShowAddMarkModal(true)} />
+                <TaskItem name="Start Focus Session" sc={40} icon={<Timer/>} onClick={() => setActiveTab('focus')} />
                 <TaskItem name="Export Progress Report" sc={0} icon={<Download/>} onClick={exportReport} />
               </TaskGroup>
             </motion.div>
           )}
-
-          {/* 🎯 MILESTONES TAB */}
-          {activeTab === 'milestones' && (
-            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
-              <div className="flex justify-between items-center">
-                <h2 className="text-4xl font-black uppercase">🎯 Milestones</h2>
-                <button 
-                  onClick={() => setShowNewMilestone(true)}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
-                >
-                  <Plus size={16}/> New Goal
-                </button>
-              </div>
-
-              <div className="grid gap-6">
-                {milestones.map(milestone => (
-                  <motion.div 
-                    key={milestone.id}
-                    initial={{opacity: 0, x: -20}}
-                    animate={{opacity: 1, x: 0}}
-                    className={`p-6 rounded-[2rem] backdrop-blur-xl border ${milestone.completed ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/10'}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-black mb-2">{milestone.goal}</h3>
-                        <div className="flex gap-4 text-sm text-slate-400">
-                          <span>🎯 Target: {milestone.target} SC</span>
-                          <span>📅 Deadline: {milestone.deadline}</span>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => toggleMilestone(milestone.id)}
-                        className={`px-6 py-3 rounded-xl font-black uppercase text-sm ${milestone.completed ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-500'}`}
-                      >
-                        {milestone.completed ? '✅ Done' : 'Complete'}
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {milestones.length === 0 && (
-                  <div className="text-center py-20 text-slate-500">
-                    <Target size={64} className="mx-auto mb-4 opacity-20"/>
-                    <p className="text-lg font-bold">No milestones yet. Create your first goal!</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* 📚 SYLLABUS TAB */}
-          {activeTab === 'syllabus' && (
-            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
-              <h2 className="text-4xl font-black uppercase">📚 GCE A/L Syllabus</h2>
-
-              {Object.entries(SYLLABUS).map(([subjectId, subject]) => (
-                <div key={subjectId} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
-                  <div className="flex items-center gap-4 mb-6">
-                    <span className="text-4xl">{SUBJECTS.find(s => s.id === subjectId)?.emoji}</span>
-                    <h3 className="text-2xl font-black uppercase">{subject.name}</h3>
-                    <span className="ml-auto text-sm font-black text-blue-400">{getSubjectProgress(subjectId)}%</span>
-                  </div>
-
-                  <div className="space-y-6">
-                    {subject.chapters.map(chapter => (
-                      <div key={chapter.id} className="bg-black/20 p-6 rounded-2xl">
-                        <h4 className="text-lg font-black mb-4 text-blue-400">{chapter.name}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {chapter.topics.map(topic => {
-                            const isCompleted = completedTopics[subjectId]?.includes(topic);
-                            return (
-                              <button
-                                key={topic}
-                                onClick={() => toggleTopic(subjectId, topic)}
-                                className={`p-4 rounded-xl text-left transition-all ${isCompleted ? 'bg-emerald-500/20 border-2 border-emerald-500' : 'bg-white/5 border-2 border-transparent hover:border-white/20'}`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  {isCompleted ? <CheckCircle size={18} className="text-emerald-400"/> : <Square size={18} className="text-slate-600"/>}
-                                  <span className="text-sm font-bold">{topic}</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-
-          {/* 📊 ANALYTICS TAB */}
-          {activeTab === 'analytics' && (
+		  {activeTab === 'analytics' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
               <div className="flex justify-between items-center">
                 <h2 className="text-4xl font-black uppercase">📊 Analytics</h2>
@@ -1073,7 +959,6 @@ export default function ScholarOS() {
                 </div>
               </div>
 
-              {/* Overall Exam Performance */}
               {Object.keys(examMarks).length > 0 && (() => {
                 const allMarks = Object.values(examMarks).flat();
                 const overallAvg = allMarks.reduce((a, b) => a + b, 0) / allMarks.length;
@@ -1123,7 +1008,6 @@ export default function ScholarOS() {
                 </div>
               </div>
 
-              {/* Exam Marks Chart */}
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-black uppercase">📊 Exam Marks Progress</h3>
@@ -1179,7 +1063,6 @@ export default function ScholarOS() {
                             )}
                           </div>
                           
-                          {/* Mini Chart */}
                           <div className="h-24 flex items-end gap-1">
                             {marks.map((mark, idx) => (
                               <div 
@@ -1215,30 +1098,215 @@ export default function ScholarOS() {
                   </div>
                 )}
               </div>
+			  {pastPapers.length > 0 && (() => {
+                const papersBySubject: Record<string, typeof pastPapers> = {};
+                pastPapers.forEach(paper => {
+                  if (!papersBySubject[paper.subject]) papersBySubject[paper.subject] = [];
+                  papersBySubject[paper.subject].push(paper);
+                });
 
-              {pastPapers.length > 0 && (
-                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
-                  <h3 className="text-2xl font-black mb-6 uppercase">📄 Past Paper Results</h3>
-                  <div className="space-y-4">
-                    {pastPapers.map(paper => (
-                      <div key={paper.id} className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
-                        <div>
-                          <p className="font-black">{paper.subject} - {paper.year}</p>
-                          <p className="text-xs text-slate-500">{paper.date}</p>
+                const allScores = pastPapers.map(p => p.score);
+                const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+                const bestScore = Math.max(...allScores);
+                const totalPapers = pastPapers.length;
+                const recentPapers = [...pastPapers].reverse().slice(0, 5);
+
+                return (
+                  <>
+                    <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 backdrop-blur-xl p-8 rounded-[2.5rem] border border-emerald-500/20">
+                      <h3 className="text-2xl font-black mb-6 uppercase flex items-center gap-3">
+                        <FileText className="text-emerald-400" size={32}/>
+                        Past Paper Performance
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div className="text-center">
+                          <p className="text-5xl font-mono font-black text-emerald-400">{avgScore.toFixed(1)}%</p>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Average Score</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-mono font-black text-emerald-400">{paper.score}%</p>
-                          <p className="text-xs text-slate-500">{paper.timeSpent} mins</p>
+                        <div className="text-center">
+                          <p className="text-5xl font-mono font-black text-blue-400">{bestScore}%</p>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Best Score</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-5xl font-mono font-black text-purple-400">{totalPapers}</p>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">Total Papers</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-5xl font-mono font-black text-amber-400">{allScores.filter(s => s >= 75).length}</p>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">A Grades</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                      <h3 className="text-2xl font-black mb-6 uppercase">📄 Past Paper Progress by Subject</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Object.entries(papersBySubject).map(([subject, papers]) => {
+                          const scores = papers.map(p => p.score);
+                          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                          const best = Math.max(...scores);
+                          const trend = scores.length > 1 ? scores[scores.length - 1] - scores[scores.length - 2] : 0;
+
+                          return (
+                            <div key={subject} className="bg-black/40 p-6 rounded-2xl">
+                              <div className="flex items-center gap-3 mb-4">
+                                <span className="text-3xl">{SUBJECTS.find(s => s.name === subject)?.emoji}</span>
+                                <div className="flex-1">
+                                  <h4 className="font-black">{subject}</h4>
+                                  <p className="text-xs text-slate-500">{papers.length} papers</p>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3 mb-4">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-slate-400">Average:</span>
+                                  <span className="font-black text-emerald-400">{avg.toFixed(1)}%</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-slate-400">Best:</span>
+                                  <span className="font-black text-blue-400">{best}%</span>
+                                </div>
+                                {scores.length > 1 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-slate-400">Trend:</span>
+                                    <span className={`font-black ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                                      {trend > 0 ? '↗' : trend < 0 ? '↘' : '→'} {Math.abs(trend).toFixed(1)}%
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="h-24 flex items-end gap-1">
+                                {scores.map((score, idx) => (
+                                  <div 
+                                    key={idx}
+                                    className="flex-1 bg-gradient-to-t from-emerald-600 to-blue-600 rounded-t relative group"
+                                    style={{ height: `${score}%` }}
+                                  >
+                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                      {score}%
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                      <h3 className="text-2xl font-black mb-6 uppercase">📄 Recent Past Papers</h3>
+                      <div className="space-y-4">
+                        {recentPapers.map(paper => (
+                          <div key={paper.id} className="flex justify-between items-center p-4 bg-black/20 rounded-xl">
+                            <div>
+                              <p className="font-black">{paper.subject} - {paper.year}</p>
+                              <p className="text-xs text-slate-500">{paper.date}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-mono font-black text-emerald-400">{paper.score}%</p>
+                              <p className="text-xs text-slate-500">{paper.timeSpent} mins</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </motion.div>
+          )}
+
+          {activeTab === 'syllabus' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <h2 className="text-4xl font-black uppercase">📚 GCE A/L Syllabus</h2>
+
+              {Object.entries(SYLLABUS).map(([subjectId, subject]) => (
+                <div key={subjectId} className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="text-4xl">{SUBJECTS.find(s => s.id === subjectId)?.emoji}</span>
+                    <h3 className="text-2xl font-black uppercase">{subject.name}</h3>
+                    <span className="ml-auto text-sm font-black text-blue-400">{getSubjectProgress(subjectId)}%</span>
+                  </div>
+
+                  <div className="space-y-6">
+                    {subject.chapters.map(chapter => (
+                      <div key={chapter.id} className="bg-black/20 p-6 rounded-2xl">
+                        <h4 className="text-lg font-black mb-4 text-blue-400">{chapter.name}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {chapter.topics.map(topic => {
+                            const isCompleted = completedTopics[subjectId]?.includes(topic);
+                            return (
+                              <button
+                                key={topic}
+                                onClick={() => toggleTopic(subjectId, topic)}
+                                className={`p-4 rounded-xl text-left transition-all ${isCompleted ? 'bg-emerald-500/20 border-2 border-emerald-500' : 'bg-white/5 border-2 border-transparent hover:border-white/20'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  {isCompleted ? <CheckCircle size={18} className="text-emerald-400"/> : <Square size={18} className="text-slate-600"/>}
+                                  <span className="text-sm font-bold">{topic}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
+              ))}
             </motion.div>
           )}
 
-          {/* ⏲️ FOCUS TAB */}
+          {activeTab === 'milestones' && (
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black uppercase">🎯 Milestones</h2>
+                <button 
+                  onClick={() => setShowNewMilestone(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase text-sm flex items-center gap-2"
+                >
+                  <Plus size={16}/> New Goal
+                </button>
+              </div>
+
+              <div className="grid gap-6">
+                {milestones.map(milestone => (
+                  <motion.div 
+                    key={milestone.id}
+                    initial={{opacity: 0, x: -20}}
+                    animate={{opacity: 1, x: 0}}
+                    className={`p-6 rounded-[2rem] backdrop-blur-xl border ${milestone.completed ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/10'}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-black mb-2">{milestone.goal}</h3>
+                        <div className="flex gap-4 text-sm text-slate-400">
+                          <span>🎯 Target: {milestone.target} SC</span>
+                          <span>📅 Deadline: {milestone.deadline}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => toggleMilestone(milestone.id)}
+                        className={`px-6 py-3 rounded-xl font-black uppercase text-sm ${milestone.completed ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-500'}`}
+                      >
+                        {milestone.completed ? '✅ Done' : 'Complete'}
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {milestones.length === 0 && (
+                  <div className="text-center py-20 text-slate-500">
+                    <Target size={64} className="mx-auto mb-4 opacity-20"/>
+                    <p className="text-lg font-bold">No milestones yet. Create your first goal!</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'focus' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
               <h2 className="text-4xl font-black uppercase">⏲️ Focus Hub</h2>
@@ -1310,7 +1378,6 @@ export default function ScholarOS() {
                   </button>
                 </div>
 
-                {/* Saved Timers List */}
                 {savedTimers.length > 0 && (
                   <div className="mt-8 space-y-2">
                     <h3 className="text-sm font-black uppercase text-center mb-4">💾 Saved Timers</h3>
@@ -1373,7 +1440,6 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 🎵 AUDIO TAB */}
           {activeTab === 'audio' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
               <h2 className="text-4xl font-black uppercase">🎵 Audio Station</h2>
@@ -1422,9 +1488,7 @@ export default function ScholarOS() {
               </div>
             </motion.div>
           )}
-
-          {/* 🛒 STORE TAB */}
-          {activeTab === 'store' && (
+		  {activeTab === 'store' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
               <div className="flex justify-between items-center">
                 <h2 className="text-4xl font-black uppercase">🛒 Scholar Store</h2>
@@ -1488,7 +1552,6 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* 😊 MOOD TAB */}
           {activeTab === 'mood' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
               <div className="flex justify-between items-center">
@@ -1537,22 +1600,30 @@ export default function ScholarOS() {
             </motion.div>
           )}
 
-          {/* ⚙️ ADVANCED TAB */}
           {activeTab === 'advanced' && (
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="space-y-8">
-              <h2 className="text-4xl font-black uppercase">⚙️ Advanced Settings</h2>
+              <h2 className="text-4xl font-black uppercase">⚙️ Settings</h2>
 
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
                 <h3 className="text-2xl font-black mb-6">Profile Settings</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-black uppercase tracking-widest text-slate-400 mb-2 block">Display Name</label>
-                    <input 
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold focus:border-blue-500 focus:outline-none"
-                    />
+                    <div className="flex gap-4">
+                      <input 
+                        type="text"
+                        value={name}
+                        disabled
+                        className="flex-1 px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold opacity-50 cursor-not-allowed"
+                      />
+                      <button 
+                        onClick={handleLogout}
+                        className="px-8 py-4 bg-red-600 hover:bg-red-500 rounded-2xl font-black uppercase text-sm"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">💾 Your data is saved under this name</p>
                   </div>
                 </div>
               </div>
@@ -1607,8 +1678,12 @@ export default function ScholarOS() {
                   </button>
                   <button 
                     onClick={() => {
-                      if (confirm('⚠️ This will delete all your progress. Are you sure?')) {
-                        localStorage.clear();
+                      if (confirm('⚠️ This will delete all your progress for this account. Are you sure?')) {
+                        Object.keys(localStorage).forEach(key => {
+                          if (key.includes(name)) {
+                            localStorage.removeItem(key);
+                          }
+                        });
                         window.location.reload();
                       }
                     }}
@@ -1623,7 +1698,6 @@ export default function ScholarOS() {
         </div>
       </main>
 
-      {/* 🎨 THEME CUSTOMIZER MODAL */}
       <AnimatePresence>
         {showThemeCustomizer && (
           <motion.div 
@@ -1721,7 +1795,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 🍅 POMODORO CUSTOMIZER MODAL */}
       <AnimatePresence>
         {showPomodoroCustomizer && (
           <motion.div 
@@ -1807,7 +1880,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 💾 SAVE TIMER MODAL */}
       <AnimatePresence>
         {showSaveTimerModal && (
           <motion.div 
@@ -1867,7 +1939,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 🎯 NEW MILESTONE MODAL */}
       <AnimatePresence>
         {showNewMilestone && (
           <motion.div 
@@ -1939,7 +2010,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 😊 MOOD LOG MODAL */}
       <AnimatePresence>
         {showMoodLog && (
           <motion.div 
@@ -2026,7 +2096,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 📄 ADD PAST PAPER MODAL */}
       <AnimatePresence>
         {showPaperModal && (
           <motion.div 
@@ -2115,45 +2184,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 🎉 MOTIVATIONAL UNLOCK MODAL */}
-      <AnimatePresence>
-        {showMotivation && (
-          <motion.div 
-            initial={{opacity: 0}} 
-            animate={{opacity: 1}} 
-            exit={{opacity: 0}}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-            onClick={() => setShowMotivation(false)}
-          >
-            <motion.div 
-              initial={{scale: 0.5, rotate: -10}}
-              animate={{scale: 1, rotate: 0}}
-              exit={{scale: 0.5, rotate: 10}}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-purple-600 to-pink-600 p-12 rounded-[3rem] max-w-lg text-center space-y-6 shadow-2xl"
-            >
-              <motion.div
-                animate={{y: [0, -20, 0]}}
-                transition={{repeat: Infinity, duration: 2}}
-                className="text-8xl"
-              >
-                🎉
-              </motion.div>
-              <h2 className="text-3xl font-black uppercase">Milestone Reached!</h2>
-              <p className="text-xl italic">&ldquo;{currentQuote}&rdquo;</p>
-              <p className="text-sm font-black">You've earned {lastUnlockAt} total credits! 🏆</p>
-              <button 
-                onClick={() => setShowMotivation(false)}
-                className="w-full py-5 bg-white text-purple-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
-              >
-                Keep Going! 💪
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 📊 ADD EXAM MARK MODAL */}
       <AnimatePresence>
         {showAddMarkModal && (
           <motion.div 
@@ -2204,7 +2234,6 @@ export default function ScholarOS() {
                   </div>
                 </div>
 
-                {/* Grade Preview */}
                 {newMark && (
                   <div className="bg-black/40 p-6 rounded-2xl text-center">
                     <p className="text-xs font-black uppercase text-slate-400 mb-2">Grade</p>
@@ -2248,7 +2277,43 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 🎁 DAILY BONUS MODAL */}
+      <AnimatePresence>
+        {showMotivation && (
+          <motion.div 
+            initial={{opacity: 0}} 
+            animate={{opacity: 1}} 
+            exit={{opacity: 0}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            onClick={() => setShowMotivation(false)}
+          >
+            <motion.div 
+              initial={{scale: 0.5, rotate: -10}}
+              animate={{scale: 1, rotate: 0}}
+              exit={{scale: 0.5, rotate: 10}}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-purple-600 to-pink-600 p-12 rounded-[3rem] max-w-lg text-center space-y-6 shadow-2xl"
+            >
+              <motion.div
+                animate={{y: [0, -20, 0]}}
+                transition={{repeat: Infinity, duration: 2}}
+                className="text-8xl"
+              >
+                🎉
+              </motion.div>
+              <h2 className="text-3xl font-black uppercase">Milestone Reached!</h2>
+              <p className="text-xl italic">&ldquo;{currentQuote}&rdquo;</p>
+              <p className="text-sm font-black">You've earned {lastUnlockAt} total credits! 🏆</p>
+              <button 
+                onClick={() => setShowMotivation(false)}
+                className="w-full py-5 bg-white text-purple-600 font-black uppercase text-lg rounded-2xl hover:scale-105 transition-transform"
+              >
+                Keep Going! 💪
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showBonusModal && (
           <motion.div 
@@ -2289,7 +2354,6 @@ export default function ScholarOS() {
         )}
       </AnimatePresence>
 
-      {/* 👻 GHOST MODE */}
       <AnimatePresence>
         {isGhostMode && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center">
@@ -2303,8 +2367,6 @@ export default function ScholarOS() {
     </div>
   );
 }
-
-// --- HELPERS ---
 
 function NavBtn({icon, active, onClick, label}: any) {
   return (
